@@ -2,6 +2,7 @@ this is vexlo the free open source roblox CLONE
 
 is is all browser based
 <img width="2293" height="1253" alt="image" src="https://github.com/user-attachments/assets/ba8c0e77-a7de-4c5a-ae0a-659c4da81ae6" />
+<img width="539" height="897" alt="image" src="https://github.com/user-attachments/assets/37ef6ec2-27d8-42fb-97ec-4cd595bd4bcd" />
 
 <img width="623" height="775" alt="image" src="https://github.com/user-attachments/assets/26edb832-6e08-461b-8e69-1db1731ffcfb" />
 
