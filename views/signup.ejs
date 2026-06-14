@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+  <title>Vexlo - Sign Up</title>
+  <%- include("partials/embeds") %>
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+    <div class="auth-card">
+      <h1>Sign Up</h1>
+
+      <form method="POST" action="/api/signup" class="auth-form">
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="password" name="password" placeholder="Password" required />
+
+        <button type="submit">Sign Up</button>
+      </form>
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+
+</body>
+</html>

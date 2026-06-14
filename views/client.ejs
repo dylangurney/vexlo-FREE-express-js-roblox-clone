@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vexlo Client</title>
+  <%- include("partials/csp") %>
+  <script src="/updateonline.js"></script>
+  <script>
+    window.SERVER_JOB_ID = "<%= jobid %>";
+    window.SERVER_PORT = "<%= port %>";
+  </script>
+  
+
+
+
+  <link rel="stylesheet" href="/studio.css">
+
+</head>
+
+<body>
+
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TABS -->
+     <style>
+      .player-header {
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 0.8;
+
+  padding: 4px 6px;
+  margin-bottom: 4px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+#player-list {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+
+  width: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+
+  padding: 6px;
+
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+
+  color: white;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.player-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 6px 8px;
+  margin: 2px 0;
+
+  border-radius: 4px;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  cursor: default;
+}
+
+.player-entry:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+      #chat-ui {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 300px;
+  z-index: 9999;
+  font-family: sans-serif;
+}
+
+#chat-log {
+  max-height: 200px;
+  overflow-y: auto;
+  color: white;
+  margin-bottom: 5px;
+}
+
+#chat-input {
+  width: 100%;
+  padding: 10px 12px;
+
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+
+  background: rgba(0, 0, 0, 0.25); /* transparent base */
+  backdrop-filter: blur(10px);      /* glass effect */
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+
+  outline: none;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+
+  transition: all 0.2s ease;
+}
+
+#chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+#chat-input:focus {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+}
+.chat-bubble {
+  position: absolute;
+  transform: translate(-50%, -100%);
+
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.95);
+  color: #111;
+
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 500;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  pointer-events: none;
+
+  white-space: nowrap;
+  user-select: none;
+}
+
+
+@keyframes bubbleIn {
+  from {
+    transform: translate(-50%, -100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -100%) scale(1);
+    opacity: 1;
+  }
+}
+.chat-bubble.fade {
+  opacity: 0;
+  transform: translate(-50%, -100%) scale(0.95);
+}
+.chatmsg {
+  color: white;
+  padding: 4px 6px;
+  margin: 2px 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+
+  background: rgba(0, 0, 0, 0.2);
+}
+     </style>
+         <div id="player-list">
+      <div class="player-header">Players</div>
+    </div>
+     <div id="chat-ui">
+    <div id="chat-log"></div>
+
+    <input id="chat-input" placeholder="Press &quot;/&quot; to start typing message..." />
+
+
+    <script>
+      window.PLAYER_LIST = new Map();
+
+function updatePlayerList() {
+  const container = document.getElementById("player-list");
+
+  container.innerHTML = `<div class="player-header">Players</div>`;
+
+  const players = [...window.PLAYER_LIST.entries()]
+    .sort((a, b) => {
+      const nameA = GAMEMODEL[a[0]]?.props?.Name || "";
+      const nameB = GAMEMODEL[b[0]]?.props?.Name || "";
+      return nameA.localeCompare(nameB);
+    });
+
+  for (const [id] of players) {
+    const name = GAMEMODEL[id]?.props?.Name || "Unknown";
+
+    const div = document.createElement("div");
+    div.className = "player-entry";
+    div.textContent = name;
+
+    container.appendChild(div);
+  }
+}
+function addPlayer(id, data) {
+  window.PLAYER_LIST.set(id, data);
+  updatePlayerList();
+}
+function removePlayer(id) {
+  window.PLAYER_LIST.delete(id);
+  updatePlayerList();
+}
+window.addPlayer = addPlayer
+window.removePlayer = removePlayer
+
+      const input = document.getElementById("chat-input");
+      window.activeBubbles = []
+
+const BUBBLE_BASE_OFFSET = 100; // default lift above head
+const BUBBLE_STACK_SPACING = 35;
+
+function rebuildBubbleStack(plrI) {
+  const bubbles = window.activeBubbles.filter(b => b.plrI === plrI);
+
+  // oldest on top, newest at bottom
+  bubbles.forEach((b, i) => {
+    const indexFromBottom = (bubbles.length - 1) - i;
+
+    b.offsetY =
+      BUBBLE_BASE_OFFSET +
+      (indexFromBottom * BUBBLE_STACK_SPACING);
+  });
+}
+
+function createChatBubble(plrI, text) {
+  const obj = getcharfromplr(plrI);
+  if (!obj) return;
+
+  const screen = worldToScreen(obj);
+  const x = screen.x;
+  const y = screen.y - BUBBLE_BASE_OFFSET;
+
+  const div = document.createElement("div");
+  div.className = "chat-bubble";
+  div.textContent = text;
+
+  div.style.transform = `translate(${x}px, ${y}px)`;
+
+  document.body.appendChild(div);
+
+  window.activeBubbles.push({
+    plrI,
+    object: obj,
+    dom: div,
+    x: 0,
+    y: 0,
+    offsetY: 0,
+    time: Date.now()
+  });
+
+  rebuildBubbleStack(plrI);
+
+  // auto remove after 5s
+  setTimeout(() => {
+    div.remove();
+    window.activeBubbles =
+      window.activeBubbles.filter(b => b.dom !== div);
+  }, 5000);
+}
+
+
+
+function getnamefromplr(plr) {
+  console.log(GAMEMODEL, plr)
+  return GAMEMODEL[plr]?.props?.Name || "???";
+}
+
+function getcharfromplr(plr) {
+  const model = GAMEMODEL[plr];
+  if (!model) return false;
+
+  const char = model.props?.Character;
+  if (!char) return false;
+
+  return char;
+}
+
+
+
+function addChatMessage(plrI, text) {
+  createChatBubble(plrI, text)
+  const username = getnamefromplr(plrI)
+  const log = document.getElementById("chat-log");
+
+  const div = document.createElement("div");
+  div.className = "chatmsg"
+  div.textContent = `${username}: ${text}`;
+
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+
+  // remove after 30 seconds
+  setTimeout(() => {
+    div.remove();
+  }, 30000);
+}
+
+window.addChatMessage = addChatMessage
+
+let typingTimeout = null;
+let isTyping = false;
+
+function startTyping() {
+  if (isTyping) return;
+
+  isTyping = true;
+
+  window.VEXL_WS.send(JSON.stringify({
+    type: "typing",
+    data: { state: true }
+  }));
+}
+
+
+
+function stopTyping() {
+  if (!isTyping) return;
+
+  isTyping = false;
+
+  window.VEXL_WS.send(JSON.stringify({
+    type: "typing",
+    data: { state: false }
+  }));
+}
+
+input.addEventListener("input", () => {
+  startTyping();
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    stopTyping();
+  }, 1000); // stops typing after 1s idle
+});
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const msg = input.value;
+    input.value = "";
+
+    window.VEXL_WS.send(JSON.stringify({
+        type: "send_chat",
+        data: { msg }
+    }));
+
+    stopTyping();
+    input.blur()
+
+  }
+});
+document.addEventListener("keydown", (e) => {
+  // ignore if already typing in input
+  if (document.activeElement === input) return;
+
+  // ignore modifiers
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+  if (e.key === "/") {
+    e.preventDefault();
+
+    input.focus();
+    input.value = "";
+  }
+});
+
+function istyping() {
+  return document.activeElement === input;
+}
+window.istyping = istyping
+
+    </script>
+  </div>
+
+
+<style>
+  #loadingscreen {
+  position: fixed;
+  inset: 0;
+  background: #0f0f0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.loader {
+  text-align: center;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #333;
+  border-top: 6px solid #4fa3ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.text {
+  font-size: 16px;
+  opacity: 0.8;
+}
+#gamethumb {
+  width: 200px;
+  height: 200px;
+}
+</style>
+<div id="loadingscreen">
+  <div class="loader">
+    <div class="loadingicon">
+      <img id="gamethumb">
+    </div>
+    <div class="loadingtitle" id="gamename"></div>
+    <div class="spinner"></div>
+    <div class="text">Connecting to the server...</div>
+  </div>
+  <script>
+    if (localStorage.getItem("gamename")) {
+      document.getElementById("gamename").textContent = localStorage.getItem("gamename")
+      document.getElementById("gamethumb").src = "/gamethumbnails/" + localStorage.getItem("gamethumb")
+    }
+
+
+    localStorage.removeItem("gamename")
+    localStorage.removeItem("gamethumb")
+  </script>
+</div>
+
+    <div class="canvas" id="display3darea">
+
+
+    </div>
+
+    <script type="module">
+      import * as THREE from '/three/three.module.js';
+      import { EXRLoader } from '/three/exrloader.js';
+
+      import { DecalGeometry } from '/three/DecalGeometry.js';
+      import { GLTFLoader } from '/three/GLTFLoader.js';
+
+      import RAPIER from "/rapier3d-compat.js";
+
+      window.RAPIER = RAPIER
+
+      window.THREE = THREE
+      window.EXRLoader = EXRLoader
+
+      window.DecalGeometry = DecalGeometry
+      window.GLTFLoader = GLTFLoader
+
+
+  function COOLoutput(type, text, Context = "", ScriptName = "") {
+
+      const payload = {
+          type: "COOLOUTPUT",
+          level: type,
+          text,
+          context: Context,
+          script: ScriptName
+      };
+
+      // send to parent if it exists
+      if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, "*");
+      }
+  }
+
+  window.COOLoutput = COOLoutput;
+
+      window.GAME_MODEL_ID = "GAME_MODEL_ID"
+      window.GAMEMODEL = {
+        [GAME_MODEL_ID]: {
+          children: [],
+          props: {
+            ClassName: "game",
+            Name: "game"
+          },
+        }
+
+      }
+
+
+      let oldscripts = []
+
+      async function LOAD_LOL_COOKED(buffer) {
+        for (const i of oldscripts) {
+          i.remove()
+        }
+        console.log("Loaded ");
+
+        const script = document.createElement("script");
+        script.src = "/clientload.js"
+        document.body.appendChild(script);
+        script.loaded
+
+        script.onload = async () => {
+          console.log("clientload.js loaded");
+
+          destroyThreeCanvas();
+
+          await load_3dstuff();
+        };
+
+
+        const script2 = document.createElement("script");
+        script2.src = "/client.js"
+        document.body.appendChild(script2);
+
+        script2.onload = async () => {
+          console.log("client.js loaded");
+        };
+
+
+
+      }
+
+      window.ID_TO_MESH = {}
+      window.DECAL_FOR_PART_ID = {}
+
+
+
+
+      async function Create_vexl(GAMEMODEL) {
+        const json = JSON.stringify(GAMEMODEL);
+        const encoder = new TextEncoder();
+        const data = encoder.encode(json);
+        const cs = new CompressionStream("gzip");
+        const writer = cs.writable.getWriter();
+        writer.write(data);
+        writer.close();
+        const compressed = await new Response(cs.readable).arrayBuffer();
+        return compressed; // ArrayBuffer
+      }
+
+
+
+
+      function handle_parent_change(OBJECT, PARENT) {
+        const oldParent = window.GAMEMODEL[OBJECT].props["Parent"];
+
+        // Remove from old parent's children
+        if (oldParent && window.GAMEMODEL[oldParent]) {
+          const siblings = window.GAMEMODEL[oldParent].children;
+          const index = siblings.indexOf(OBJECT);
+          if (index !== -1) {
+            siblings.splice(index, 1);
+          }
+        }
+
+        // Set new parent
+        window.GAMEMODEL[OBJECT].props["Parent"] = PARENT;
+
+
+
+        // Add to new parent's children
+        if (PARENT && window.GAMEMODEL[PARENT]) {
+          window.GAMEMODEL[PARENT].children.push(OBJECT);
+        }
+
+        if (oldParent) {
+          UpdateOBJ_asrendered(oldParent)
+        }
+
+
+        UpdateOBJ_asrendered(PARENT)
+
+      }
+      window.handle_parent_change = handle_parent_change
+
+      function handle_delete_obj(OBJECT, not_main) {
+        console.warn("DELETEING OBJECT", OBJECT)
+        const thatdata = window.GAMEMODEL[OBJECT]
+        if (thatdata.props.Parent == GAME_MODEL_ID) {
+          return
+        }
+
+        const children = thatdata["children"]
+        for (const i of children) {
+          handle_delete_obj(i, true)
+        }
+
+        let rendered = ID_TO_MESH[OBJECT]
+        if (rendered) {
+          window.scene.remove(rendered);
+          delete ID_TO_MESH[OBJECT];
+        }
+
+
+
+
+        const oldParent = thatdata.props["Parent"]
+        // Remove from old parent's children
+        if (oldParent && window.GAMEMODEL[oldParent]) {
+          const siblings = window.GAMEMODEL[oldParent].children;
+          const index = siblings.indexOf(OBJECT);
+          if (index !== -1) {
+            siblings.splice(index, 1);
+          }
+        }
+        UpdateOBJ_asrendered(oldParent)
+
+
+        delete window.GAMEMODEL[OBJECT]
+      }
+      window.handle_delete_obj = handle_delete_obj
+
+
+      window.materialCache = {};
+
+      function make_vector3(x = 0, y = 0, z = 0) {
+        return { x, y, z };
+      }
+
+      function make_vector2(x = 0, y = 0) {
+        return { x, y };
+      }
+
+      function make_color3(r = 255, g = 255, b = 255) {
+        return { r, g, b };
+      }
+
+      function make_cframe(
+        px = 0, py = 0, pz = 0,
+        rx = 0, ry = 0, rz = 0
+      ) {
+        return {
+          position: { x: px, y: py, z: pz },
+          rotation: { x: rx, y: ry, z: rz }
+        };
+      }
+
+      window.make_vector3 = make_vector3
+      window.make_vector2 = make_vector2
+      window.make_color3 = make_color3
+      window.make_cframe = make_cframe
+
+      function get_default_tx(txNAME) {
+        return {
+          color: `/textures/${txNAME}/color.jpg`,
+          displacement: `/textures/${txNAME}/displacement.png`,
+          normal: `/textures/${txNAME}/normal.exr`,
+          roughness: `/textures/${txNAME}/roughness.exr`,
+        }
+      }
+
+      function escapeHTML(str) {
+        return str.toString()
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+
+      
+
+      window.CLASS_Services = [
+        "Workspace",
+        "Players",
+        "ReplicatedStorage",
+        "Lighting",
+        "ServerScripts",
+        "ClientScripts",
+      ]
+
+      async function loadProps() {
+        window.all_props_for_classes = (await (await fetch("/all_props_for_classes.json")).json());
+        window.prop_types = (await (await fetch("/prop_types.json")).json());
+        window.prop_default = (await (await fetch("/prop_default.json")).json());
+      }
+
+      loadProps();
+
+      window.props_readonly = [
+        "ClassName",
+      ]
+
+      const Source_DEFAULT = `{"blocks":{"languageVersion":0,"blocks":[{"type":"event_start","id":"Ap[Aw04#fc@Tb2_=do_l","x":210,"y":96,"next":{"block":{"type":"print","id":"uGH}V%cw4ac|.8NM7l)R","inputs":{"TEXT":{"block":{"type":"type_string","id":"s:(Gd9B|y?mI~ClMJh)1","fields":{"TEXT":"Hello World"}}}}}}}]}}`
+      window.selectedNode = null
+
+
+      function createInstance(props) {
+        const instanceID = crypto.randomUUID()
+        const parentID = props["Parent"]
+
+        if (parentID) {
+          window.GAMEMODEL[parentID]["children"].push(instanceID)
+        }
+        
+        for (const i of all_props_for_classes[props.ClassName]) {
+          const defaultPROP = window.prop_default[i]
+
+          if (props[i] == undefined) {
+            const pt = prop_types[i]
+            if (pt == "String") {
+              if ((i) == "Source") {
+                props[i] = Source_DEFAULT
+              } else {
+                props[i] = ""
+              }
+            } else if (pt == "Number") {
+              props[i] = defaultPROP || 0
+            } else if (pt == "Object") {
+              props[i] = defaultPROP || null
+            } else if (pt == "Vector3") {
+              props[i] = defaultPROP || make_vector3()
+            } else if (pt == "Color3") {
+              props[i] = defaultPROP || make_color3()
+            } else if (pt == "Vector2") {
+              props[i] = defaultPROP || make_vector2()
+            } else if (pt == "Bool") {
+              props[i] = defaultPROP || true
+            } else if (pt == "CFrame") {
+              props[i] = defaultPROP || make_cframe()
+            }
+          }
+        }
+
+        window.GAMEMODEL[instanceID] = {
+          children: [],
+          props: props,
+        }
+        return instanceID
+      }
+
+      window.createInstance = createInstance
+
+
+
+function destroyThreeCanvas() {
+  // stop render loop first (IMPORTANT)
+  if (window.isRunning !== undefined) {
+    window.isRunning = false;
+  }
+
+  // dispose scene
+  if (window.scene) {
+    window.scene.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+
+      if (obj.material) {
+        const materials = Array.isArray(obj.material)
+          ? obj.material
+          : [obj.material];
+
+        for (const mat of materials) {
+          for (const key in mat) {
+            const v = mat[key];
+            if (v && v.isTexture) v.dispose();
+          }
+          mat.dispose();
+        }
+      }
+    });
+
+    window.scene.clear();
+    window.scene = null;
+  }
+
+  // dispose renderer
+  if (window.renderer) {
+    window.renderer.dispose();
+
+    // remove canvas from DOM
+    if (window.renderer.domElement?.parentNode) {
+      window.renderer.domElement.parentNode.removeChild(
+        window.renderer.domElement
+      );
+    }
+
+    window.renderer = null;
+  }
+
+
+
+  // clear caches
+  window.ID_TO_MESH = {};
+  window.DECAL_FOR_PART_ID = {};
+  window.materialCache = {};
+
+  // clear container leftovers (optional safety)
+  const container = document.getElementById("display3darea");
+  if (container) {
+    container.innerHTML = "";
+  }
+
+  console.log("Three.js fully destroyed (scene + canvas + renderer)");
+}
+
+
+      async function init() {
+        await loadProps();
+
+        LOAD_LOL_COOKED()
+      }
+
+      init();
+
+    </script>
+  </div>
+
+</body>
+
+
+</html>

@@ -1,0 +1,1057 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/blockly.min.js"></script>
+      <%- include("partials/csp") %>
+    <head>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #ScriptingArea {
+    width: 100%;
+    height: 100%;
+  }
+
+  #blocklyDiv {
+    width: 100%;
+    height: 100%;
+  }
+
+.blocklyMainBackground {
+    fill: #ffffff;
+}
+
+.blocklyToolboxDiv {
+    background: #f4f4f4;
+    border-right: 1px solid #ddd;
+}
+
+.blocklyFlyoutBackground {
+    fill: #f7f7f7;
+}
+
+.blocklyText {
+    font-family: "Helvetica Neue", sans-serif;
+    font-size: 12pt;
+    font-weight: 500;
+    fill: white;
+}
+
+.blocklyPath {
+    stroke-width: 1.5px;
+}
+
+.blocklySelected > .blocklyPath {
+    stroke: #000;
+    stroke-opacity: 0.2;
+}
+
+
+</style>
+    </head>
+</head>
+<body>
+    <div id="ScriptingArea">
+    <div id="blocklyDiv" style="height: 100%; width: 100%;"></div>
+
+    <xml id="toolbox" style="display: none">
+    </xml>
+  </div>
+    <script>
+
+
+const BLOCKS = [
+  {
+    category: "Indexing",
+    colour: "4C97FF",
+    blocks: [
+      {
+        type: "index1",
+        kind: "value",
+        message: "%1 Index %2 ‎",
+        args: ["OBJ", "TEXT"]
+      },
+      {
+        type: "index2",
+        kind: "value",
+        message: "%1 Index 2 %2 %3 ‎",
+        args: ["OBJ", "TEXT1", "TEXT2"]
+      },
+      {
+        type: "index3",
+        kind: "value",
+        message: "%1 Index 3 %2 %3 %4 ‎",
+        args: ["OBJ", "TEXT1", "TEXT2", "TEXT3"]
+      },
+            {
+        type: "index4",
+        kind: "value",
+        message: "%1 Index 4 %2 %3 %4 %5 ‎",
+        args: ["OBJ", "TEXT1", "TEXT2", "TEXT3", "TEXT4"]
+      },
+      {
+        type: "clone",
+        kind: "value",
+        message: "Clone Object: %1 ‎",
+        args: ["OBJ"]
+      },
+
+      {
+        type: "index_game",
+        kind: "value",
+        message: "game",
+        args: []
+      },
+      {
+        type: "index_workspace",
+        kind: "value",
+        message: "workspace",
+        args: []
+      },
+      {
+        type: "index_camera",
+        kind: "value",
+        message: "camera",
+        args: []
+      },
+      {
+        type: "index_script",
+        kind: "value",
+        message: "script",
+        args: []
+      },
+      {
+        type: "local_player",
+        kind: "value",
+        message: "My Client Player",
+        args: []
+      },
+      {
+        type: "set_property",
+        kind: "statement",
+        message: "Set Property Obj: %1 Property: %2 Value: %3 ‎",
+        args: ["OBJ", "PROP", "VALUE"]
+      },
+      {
+        type: "get_property",
+        kind: "value",
+        message: "Get Property: %1 %2 ‎",
+        args: ["OBJ", "PROP"]
+      },
+      {
+        type: "get_children",
+        kind: "value",
+        message: "Get Children %1 ‎",
+        args: ["OBJ"]
+      },
+      {
+        type: "wait_for_child",
+        kind: "value",
+        message: "%1 Wait For Child %2 ‎",
+        args: ["OBJ", "TEXT"]
+      },
+      {
+        type: "load_character",
+        kind: "value",
+        message: "Load Character userid: %1 ‎",
+        args: ["USERID"]
+      },
+      {
+        type: "applyimpulse",
+        kind: "statement",
+        message: "Apply Impluse Physics OBJ: %1 VECTOR3: %2 ‎",
+        args: ["OBJ", "VEC3"]
+      },
+      {
+        type: "onfloor",
+        kind: "value",
+        message: "Object Grounded OBJ: %1 Distance: %2 ‎",
+        args: ["OBJ", "DIST"],
+        output: "Boolean"
+      },
+    ]
+  },
+
+  {
+    category: "Core Types",
+    colour: "9966FF",
+    blocks: [
+      {
+        type: "wait",
+        kind: "statement",
+        message: "Wait Seconds: %1 ‎",
+        args: ["SECS"]
+      },
+      {
+        type: "type_string",
+        kind: "value",
+        message: '" %1 "',
+        args: [{ field: "TEXT", default: "hello" }]
+      },
+      {
+        type: "type_number",
+        kind: "value",
+        message: "%1",
+        args: [{ field: "TEXT", default: "123" }]
+      },
+
+
+      {
+        type: "type_true",
+        kind: "value",
+        message: "true",
+        args: [],
+        output: "Boolean",
+      },
+      {
+        type: "type_false",
+        kind: "value",
+        message: "false",
+        args: [],
+        output: "Boolean",
+      },
+      {
+        type: "type_null",
+        kind: "value",
+        message: "Null",
+        args: []
+      },
+      {
+        type: "type_vector3",
+        kind: "value",
+        message: "Vector 3 x: %1y: %2z: %3 ‎",
+        args: ["X", "Y", "Z"]
+      },
+      {
+        type: "type_color3",
+        kind: "value",
+        message: "Color 3 r: %1g: %2b: %3 ‎",
+        args: ["R", "G", "B"]
+      },
+      {
+        type: "type_vector2",
+        kind: "value",
+        message: "Vector 2 x: %1y: %2 ‎",
+        args: ["X", "Y"]
+      },
+      {
+        type: "unit_vec3",
+        kind: "value",
+        message: "Unit of Vector3: %1 ‎",
+        args: ["VEC"]
+      },
+      {
+        type: "mag_vec3",
+        kind: "value",
+        message: "Magnitude of Vector3: %1 ‎",
+        args: ["VEC"]
+      },
+      {
+        type: "add_vector3",
+        kind: "value",
+        message: "%1 Vector3 + Vector3 %2 ‎",
+        args: ["VEC1", "VEC2"]
+      },
+      {
+        type: "sub_vector3",
+        kind: "value",
+        message: "%1 Vector3 - Vector3 %2 ‎",
+        args: ["VEC1", "VEC2"]
+      },
+      {
+        type: "mul_vector3",
+        kind: "value",
+        message: "%1 Vector3 * Vector3 %2 ‎",
+        args: ["VEC1", "VEC2"]
+      },
+      {
+        type: "div_vector3",
+        kind: "value",
+        message: "%1 Vector3 / Vector3 %2 ‎",
+        args: ["VEC1", "VEC2"]
+      },
+
+      {
+        type: "prop_chain",
+        kind: "value",
+        message: "Index from type Type: %1  Index: %2 ‎",
+        args: ["PROP", "VALUE"]
+      },
+
+
+
+    ]
+  },
+
+  {
+    category: "CFrame",
+    colour: "423e25",
+    blocks: [
+      {
+        type: "cframe_new",
+        kind: "value",
+        message: "CFrame Position X: %1 Y: %2 Z: %3 Rotation X: %4 Y: %5 Z: %6 ‎",
+        args: ["X", "Y", "Z", "RX", "RY", "RZ"]
+      },
+      {
+        type: "cframe_position",
+        kind: "value",
+        message: "CFrame From Vector 3 Position: %1 ‎",
+        args: ["VEC3"]
+      },
+      {
+        type: "cframe_position2",
+        kind: "value",
+        message: "CFrame From 2 Vector 3's: Position: %1Rotation: %2 ‎",
+        args: ["POS", "ROT"]
+      },
+      {
+        type: "cframe_lookat",
+        kind: "value",
+        message: "CFrame LookAt Position: %1 Target Position: %2 ‎",
+        args: ["POS", "TARGET"]
+      },
+      {
+        type: "cframe_eanglesxyz",
+        kind: "value",
+        message: "CFrame fromEulerAnglesXYZ X: %1 Y: %2 Z: %3 ‎",
+        args: ["RX", "RY", "RZ"]
+      },
+      {
+        type: "cframe_eanglesyxz",
+        kind: "value",
+        message: "CFrame fromEulerAnglesYXZ X: %1 Y: %2 Z: %3 ‎",
+        args: ["RX", "RY", "RZ"]
+      },
+      {
+        type: "set_obj_cf",
+        kind: "statement",
+        message: "Set CFrame Obj: %1 CFrame: %2 ‎",
+        args: ["OBJ", "CF"]
+      },
+      {
+        type: "lerp_obj_cf",
+        kind: "statement",
+        message: "Lerp CFrame Obj: %1 CFrame: %2 Delta: %3 ‎",
+        args: ["OBJ", "CF", "DELTA"]
+      },
+      {
+        type: "lerp_obj_cf_once",
+        kind: "statement",
+        message: "Lerp CFrame (ONCE) Obj: %1 CFrame: %2 Delta: %3 ‎",
+        args: ["OBJ", "CF", "DELTA"]
+      },
+      {
+        type: "get_pos_cf",
+        kind: "value",
+        message: "Get Position from CFrame %1 ‎",
+        args: ["CF"]
+      },
+      {
+        type: "get_rot_cf",
+        kind: "value",
+        message: "Get Rotation from CFrame %1 ‎",
+        args: ["CF"]
+      },
+
+    ]
+  },
+
+  {
+    category: "Connection",
+    colour: "302d36",
+    blocks: [
+      {
+        type: "post_to_server",
+        kind: "statement",
+        message: "Post to Server Message Name: %1 Data: %2 ‎",
+        args: ["NAME", "DATA"]
+      },
+
+      {
+        type: "recieve_from_client",
+        kind: "hat",
+        message: "On Server Message  (plr), (name) (data)",
+        inputs: [],
+        args: [],
+      },
+
+      {
+        type: "post_to_client",
+        kind: "statement",
+        message: "Post to Client Player: %1 Message Name: %2 Data: %3 ‎",
+        args: ["PLR", "NAME", "DATA"]
+      },
+
+      {
+        type: "post_to_all_clients",
+        kind: "statement",
+        message: "Post to ALL Client's Message Name: %1 Data: %2 ‎",
+        args: ["NAME", "DATA"]
+      },
+
+      {
+        type: "recieve_from_server",
+        kind: "hat",
+        message: "On Client Message (name), (data)",
+        inputs: [],
+        args: [],
+      },
+
+    ]
+  },
+
+    {
+  category: "Events",
+  colour: "#a37b03",
+  blocks: [
+    {
+      type: "event_start",
+      kind: "hat",
+      message: "On Script Start",
+      inputs: [],
+      args: [],
+    },
+    {
+      type: "event_player_joined",
+      kind: "hat",
+      message: "On Player Joined (plr)",
+      inputs: [],
+      args: [],
+    },
+    {
+      type: "event_player_leave",
+      kind: "hat",
+      message: "On Player Leaving (plr)",
+      inputs: [],
+      args: [],
+    },
+
+    {
+      type: "event_renderstep",
+      kind: "hat",
+      message: "On Render stepped (dt)",
+      inputs: [],
+      args: [],
+    },
+
+
+    {
+      type: "event_keydown",
+      kind: "hat",
+      message: "On Key Down %1 ‎",
+      inputs: [],
+      args: ["KEY"] ,
+    },
+    {
+      type: "event_keyup",
+      kind: "hat",
+      message: "On Key Up %1 ‎",
+      inputs: [],
+      args: ["KEY"] ,
+    },
+    {
+      type: "event_m1d",
+      kind: "hat",
+      message: "On Mouse1Down",
+      inputs: [],
+      args: [] ,
+    },
+    {
+      type: "event_m1u",
+      kind: "hat",
+      message: "On Mouse1Up",
+      inputs: [],
+      args: [] ,
+    },
+    {
+      type: "event_m2d",
+      kind: "hat",
+      message: "On Mouse2Down",
+      inputs: [],
+      args: [] ,
+    },
+    {
+      type: "event_m2u",
+      kind: "hat",
+      message: "On Mouse2Up",
+      inputs: [],
+      args: [] ,
+    },
+    {
+      type: "event_scrollup",
+      kind: "hat",
+      message: "On Scroll Up",
+      inputs: [],
+      args: [],
+    },
+    {
+      type: "event_scrolldown",
+      kind: "hat",
+      message: "On Scroll Down",
+      inputs: [],
+      args: [],
+    },
+
+  ]
+},
+
+
+{
+  category: "Math",
+  colour: "59C059",
+  blocks: [
+    { type: "oper_add", kind: "value", message: "%1 + %2 ‎", args: ["A", "B"]},
+    { type: "oper_sub", kind: "value", message: "%1 - %2 ‎", args: ["A", "B"] },
+    { type: "oper_mul", kind: "value", message: "%1 * %2 ‎", args: ["A", "B"] },
+    { type: "oper_div", kind: "value", message: "%1 / %2 ‎", args: ["A", "B"] },
+    { type: "oper_mod", kind: "value", message: "%1 mod %2 ‎", args: ["A", "B"] },
+    { type: "oper_random", kind: "value", message: "random %1 to %2 ‎", args: ["A", "B"] },
+
+    { type: "oper_lt", kind: "value", message: "%1 < %2 ‎", args: ["A", "B"], output: "Boolean" },
+    { type: "oper_gt", kind: "value", message: "%1 > %2 ‎", args: ["A", "B"], output: "Boolean" },
+    { type: "oper_equals", kind: "value", message: "%1 = %2 ‎", args: ["A", "B"], output: "Boolean" },
+    { type: "oper_and", kind: "value", message: "%1 and %2 ‎", args: ["A", "B"], output: "Boolean" },
+    { type: "oper_or", kind: "value", message: "%1 or %2 ‎", args: ["A", "B"], output: "Boolean" },
+    { type: "oper_not", kind: "value", message: "not %1 ‎", args: ["A"], output: "Boolean" },
+
+
+  ]
+},
+
+{
+  category: "Strings",
+  colour: "ff9100",
+  blocks: [
+    { type: "string_join", kind: "value", message: "join string1: %1 string2: %2 ‎", args: ["A", "B"] },
+    { type: "string_letter", kind: "value", message: "character: %1 of string: %2 ‎", args: ["INDEX", "TEXT"] },
+    { type: "string_len", kind: "value", message: "length of string: %1 ‎", args: ["TEXT"] }
+  ]
+},
+
+{
+  category: "Advanced Math",
+  colour: "ff0080",
+  blocks: [
+    { type: "oper_floor", kind: "value", message: "floor %1 ‎", args: ["A"] },
+    { type: "oper_ceil", kind: "value", message: "ceil %1 ‎", args: ["A"] },
+    { type: "oper_round", kind: "value", message: "round %1 ‎", args: ["A"] },
+    { type: "oper_trunc", kind: "value", message: "truncate %1 ‎", args: ["A"] },
+    { type: "oper_abs", kind: "value", message: "abs %1 ‎", args: ["A"] },
+
+    { type: "oper_pow", kind: "value", message: "%1 ^ %2 ‎", args: ["A", "B"] },
+    { type: "oper_sqrt", kind: "value", message: "sqrt %1 ‎", args: ["A"] },
+
+    { type: "oper_exp", kind: "value", message: "exp %1 ‎", args: ["A"] },
+    { type: "oper_log", kind: "value", message: "log %1 ‎", args: ["A"] },
+    { type: "oper_log10", kind: "value", message: "log10 %1 ‎", args: ["A"] },
+
+    { type: "oper_sin", kind: "value", message: "sin %1 ‎", args: ["A"] },
+    { type: "oper_cos", kind: "value", message: "cos %1 ‎", args: ["A"] },
+    { type: "oper_tan", kind: "value", message: "tan %1 ‎", args: ["A"] },
+    { type: "oper_rad", kind: "value", message: "deg %1 → rad", args: ["A"] },
+    { type: "oper_deg", kind: "value", message: "rad %1 → deg", args: ["A"] },
+
+    { type: "oper_asin", kind: "value", message: "asin %1 ‎", args: ["A"] },
+    { type: "oper_acos", kind: "value", message: "acos %1 ‎", args: ["A"] },
+    { type: "oper_atan", kind: "value", message: "atan %1 ‎", args: ["A"] },
+    { type: "oper_atan2", kind: "value", message: "atan2 %1 %2 ‎", args: ["A", "B"] },
+
+    { type: "oper_min", kind: "value", message: "min %1 %2 ‎", args: ["A", "B"] },
+    { type: "oper_max", kind: "value", message: "max %1 %2 ‎", args: ["A", "B"] },
+    { type: "oper_clamp", kind: "value", message: "clamp %1 between %2 and %3 ‎", args: ["VALUE", "MIN", "MAX"] }
+  ]
+},
+
+{
+  category: "Bitwise",
+  colour: "186b3b",
+  blocks: [
+    {
+      type: "bit_and",
+      kind: "value",
+      message: "%1 bitwise AND %2 ‎",
+      args: ["A", "B"]
+    },
+    {
+      type: "bit_or",
+      kind: "value",
+      message: "%1 bitwise OR %2 ‎",
+      args: ["A", "B"]
+    },
+    {
+      type: "bit_xor",
+      kind: "value",
+      message: "%1 bitwise XOR %2 ‎",
+      args: ["A", "B"]
+    },
+    {
+      type: "bit_not",
+      kind: "value",
+      message: "bitwise NOT %1 ‎",
+      args: ["A"]
+    },
+    {
+      type: "bit_lshift",
+      kind: "value",
+      message: "%1 bitwise L Shift %2 ‎",
+      args: ["A", "B"]
+    },
+    {
+      type: "bit_rshift",
+      kind: "value",
+      message: "%1 bitwise R Shift %2 ‎",
+      args: ["A", "B"]
+    }
+  ]
+},
+
+{
+  category: "Input",
+  colour: "61b5c2",
+  blocks: [
+    { type: "is_key_down", kind: "value", message: "Is Key Down: %1 ‎", args: ["KEY"], output: "Boolean" },
+    { type: "mouse_x", kind: "value", message: "Mouse X", args: [] },
+    { type: "mouse_y", kind: "value", message: "Mouse Y", args: [] },
+    { type: "mouse_x_delta", kind: "value", message: "Mouse X Delta", args: [] },
+    { type: "mouse_y_delta", kind: "value", message: "Mouse Y Delta", args: [] },   
+    { type: "mouse_1_down", kind: "value", message: "Is Mouse 1 Down", args: [] , output: "Boolean"},
+    { type: "mouse_2_down", kind: "value", message: "Is Mouse 2 Down", args: [] , output: "Boolean"},
+    { type: "lockmouse", kind: "statement", message: "Lock Mouse", args: [] },
+    { type: "unlockmouse", kind: "statement", message: "Unlock Mouse", args: [] },
+    { type: "unixtime", kind: "value", message: "Unix Timestamp", args: [] },       
+
+  ]
+},
+
+
+
+  {
+    category: "Console",
+    colour: "#cb5dde",
+    blocks: [
+      {
+        type: "print",
+        kind: "statement",
+        message: "print %1 ‎",
+        args: ["TEXT"]
+      },
+      {
+        type: "warn",
+        kind: "statement",
+        message: "warn %1 ‎",
+        args: ["TEXT"]
+      },
+      {
+        type: "error",
+        kind: "statement",
+        message: "error %1 ‎",
+        args: ["TEXT"]
+      },
+    ]
+  },
+
+
+
+
+{
+  category: "Tables",
+  colour: "#c93618",
+  blocks: [
+    {
+      type: "table_create",
+      kind: "value",
+      message: "create empty table",
+      args: []
+    },
+
+    {
+      type: "table_set",
+      kind: "statement",
+      message: "set Table: %1 Key: %2 Value: %3 ‎",
+      args: ["TABLE", "KEY", "VALUE"]
+    },
+
+      {
+      type: "table_get",
+      kind: "value",
+      message: "get Table: %1 Key: %2 ‎",
+      args: ["TABLE", "KEY"]
+    },
+
+    {
+      type: "table_remove",
+      kind: "statement",
+      message: "remove: table: %1  key: %2 ‎",
+      args: ["TABLE", "KEY"]
+    },
+
+    {
+      type: "table_len",
+      kind: "value",
+      message: "Length: table: %1 ‎",
+      args: ["TABLE"]
+    },
+
+    {
+      type: "table_tojson",
+      kind: "value",
+      message: "Table to JSON String: %1 ‎",
+      args: ["TABLE"]
+    },
+    {
+      type: "json_to_table",
+      kind: "value",
+      message: "JSON String to table: %1 ‎",
+      args: ["JSON"]
+    },
+
+  ]
+},
+
+
+{
+  category: "Instances",
+  colour: "37284f",
+  blocks: [
+    { type: "new_instance", kind: "value", message: "Create Object ClassName: %1 ‎", args: ["ClassName"] },
+  ]
+},
+  
+];
+
+function buildBlocklyBlocks() {
+  const defs = [];
+
+  for (const cat of BLOCKS) {
+    for (const b of cat.blocks) {
+
+      const args0 = (b.args || []).map((arg) => {
+
+        // STRING INPUT (your system)
+        if (typeof arg === "object" && arg.field) {
+          return {
+            type: "field_input",
+            name: arg.field,
+            text: arg.default || ""
+          };
+        }
+
+        // VARIABLE INPUT (NEW FIX)
+        if (typeof arg === "object" && arg.variable) {
+          return {
+            type: "field_variable",
+            name: arg.name,
+            variable: arg.variable
+          };
+        }
+
+        // VALUE SOCKET INPUT (FIXED)
+        return {
+          type: "input_value",
+          name: arg
+        };
+      });
+
+defs.push({
+  type: b.type,
+  message0: b.message,
+  args0,
+  colour: cat.colour,
+
+  output:
+  b.output !== undefined
+    ? b.output
+    : (b.kind === "value" ? null : undefined),
+
+  // 🚨 IMPORTANT FIX
+  previousStatement: b.kind === "statement" ? null : undefined,
+  nextStatement:
+    b.kind === "statement" || b.kind === "hat" ? null : undefined,
+
+
+  hat: b.kind === "hat" ? "cap" : undefined
+});
+    }
+  }
+
+  Blockly.defineBlocksWithJsonArray(defs);
+}
+
+const varsMAIN = [
+  {
+    type: "var_set",
+    message0: "set global %1 to %2 ‎",
+    args0: [
+      {
+        type: "field_input",
+        name: "NAME",
+        text: "a"
+      },
+      {
+        type: "input_value",
+        name: "VALUE"
+      }
+    ],
+    previousStatement: null,
+    nextStatement: null,
+    colour: "#b5631b"
+  },
+
+  {
+    type: "var_change",
+    message0: "change global %1 by %2 ‎",
+    args0: [
+      {
+        type: "field_input",
+        name: "NAME",
+        text: "a"
+      },
+      {
+        type: "input_value",
+        name: "DELTA"
+      }
+    ],
+    previousStatement: null,
+    nextStatement: null,
+    colour: "#b5631b"
+  },
+
+  {
+    type: "var_get",
+    message0: "global %1",
+    args0: [
+      {
+        type: "field_input",
+        name: "NAME",
+        text: "a"
+      }
+    ],
+    output: null,
+    colour: "#b5631b"
+  },
+
+  {
+    type: "var_local_set",
+    message0: "set local %1 to %2 ‎",
+    args0: [
+      {
+        type: "field_input",
+        name: "NAME",
+        text: "a"
+      },
+      {
+        type: "input_value",
+        name: "VALUE"
+      }
+    ],
+    previousStatement: null,
+    nextStatement: null,
+    colour: "#1b6bb5"
+  },
+
+  {
+  type: "var_local_change",
+  message0: "change local %1 by %2 ‎",
+  args0: [
+    {
+      type: "field_input",
+      name: "NAME",
+      text: "a"
+    },
+    {
+      type: "input_value",
+      name: "DELTA"
+    }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: "#1b6bb5"
+},
+
+{
+  type: "var_local_get",
+  message0: "local %1",
+  args0: [
+    {
+      type: "field_input",
+      name: "NAME",
+      text: "a"
+    }
+  ],
+  output: null,
+  colour: "#1b6bb5"
+},
+
+];
+
+Blockly.defineBlocksWithJsonArray(varsMAIN);
+
+
+function createBlock(type) {
+  const block = document.createElement("block");
+  block.setAttribute("type", type);
+  return block;
+}
+function buildToolboxXML() {
+  const xml = document.createElement("xml");
+  xml.id = "toolbox";
+
+  for (const cat of BLOCKS) {
+    const category = document.createElement("category");
+    category.setAttribute("name", cat.category);
+    category.setAttribute("colour", cat.colour);
+
+    for (const b of cat.blocks) {
+      const block = document.createElement("block");
+      block.setAttribute("type", b.type);
+      category.appendChild(block);
+    }
+
+    xml.appendChild(category);
+  }
+
+const controlCat = document.createElement("category");
+controlCat.setAttribute("name", "Control");
+controlCat.setAttribute("colour", "#FFAB19");
+
+controlCat.appendChild(createBlock("controls_if"));
+controlCat.appendChild(createBlock("controls_repeat_ext"));
+controlCat.appendChild(createBlock("controls_whileUntil"));
+//controlCat.appendChild(createBlock("controls_flow_statements")); // break/continue
+
+xml.appendChild(controlCat);
+
+  const varCat = document.createElement("category");
+  varCat.setAttribute("name", "Assignments");
+  varCat.setAttribute("colour", "#b5631b");
+varCat.appendChild(createBlock("var_set"));
+varCat.appendChild(createBlock("var_change"));
+varCat.appendChild(createBlock("var_get"));
+
+varCat.appendChild(createBlock("var_local_set"));
+varCat.appendChild(createBlock("var_local_change"));
+varCat.appendChild(createBlock("var_local_get"));
+
+xml.appendChild(varCat);
+
+
+  return xml;
+}
+
+buildBlocklyBlocks();
+const DarkTheme = Blockly.Theme.defineTheme("dark_custom", {
+  base: Blockly.Themes.Classic,
+
+  blockStyles: {
+    math_blocks: {
+      colourPrimary: "#4CAF50",
+      colourSecondary: "#3E8E41",
+      colourTertiary: "#2E6B30"
+    },
+    string_blocks: {
+      colourPrimary: "#9C27B0",
+      colourSecondary: "#7B1FA2",
+      colourTertiary: "#5E1380"
+    }
+  },
+
+  categoryStyles: {
+    math_category: { colour: "#4CAF50" },
+    string_category: { colour: "#9C27B0" }
+  },
+
+  componentStyles: {
+    workspaceBackgroundColour: "#181818",
+    toolboxBackgroundColour: "#202020",
+    flyoutBackgroundColour: "#2a2a2a",
+    toolboxForegroundColour: "#fff",
+    scrollbarColour: "#555",
+    cursorColour: "#fff"
+  },
+
+  fontStyle: {
+    family: "Segoe UI",
+    weight: "500",
+    size: 12
+  }
+});
+
+const workspace = Blockly.inject("blocklyDiv", {
+  toolbox: buildToolboxXML(),
+  theme: DarkTheme,
+  scrollbars: true,
+  zoom: { controls: true },
+  variables: true,
+  variableCategory: "Variables",
+  renderer: "zelos",
+});
+const urlParams = new URLSearchParams(window.location.search);
+const forid = urlParams.get("forid");
+
+let lastState = null;
+
+setInterval(() => {
+    const state = Blockly.serialization.workspaces.save(workspace);
+
+    // 🔥 1. ignore empty workspace
+    const isEmpty =
+        !state ||
+        (typeof state === "object" && Object.keys(state).length === 0);
+
+    if (isEmpty) return;
+
+    // 🔥 2. ignore unchanged state
+    const serialized = JSON.stringify(state);
+
+    if (serialized === lastState) return;
+
+    lastState = serialized;
+
+    window.parent.postMessage(
+        {
+            type: "BLOCKLY_UPDATE",
+            forid: forid,
+            data: state
+        },
+        "*"
+    );
+}, 100);
+
+
+window.addEventListener("message", (event) => {
+  if (!event.data || event.data.type !== "LOAD_BLOCKS") return;
+
+  console.log("Received ID:", event.data.id);
+  console.log("Received blocks:", event.data.data);
+
+  Blockly.serialization.workspaces.load(event.data.data, workspace);
+});
+
+workspace.addChangeListener((event) => {
+    if (event.type !== Blockly.Events.CLICK) return;
+    const state = Blockly.serialization.workspaces.save(workspace);
+    const serialized = JSON.stringify(state);
+
+    window.parent.postMessage(
+        {
+            type: "BLOCKLY_TEST",
+            blockid: event.blockId,
+            scriptid: forid,
+            data: serialized
+        },
+        "*"
+    );
+
+});
+
+    </script>
+</body>
+</html>

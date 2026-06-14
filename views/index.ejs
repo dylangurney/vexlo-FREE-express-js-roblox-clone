@@ -1,0 +1,106 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Vexlo</title>
+    <%- include("partials/embeds") %>
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+    <div class="welcomeframe">
+      <div class="profilepic">
+        <img class="welcomepic"
+            src="/headshots/<%= user ? user.id : 'Guest' %>">
+      </div>
+
+
+
+      <h1>Welcome, <%= user ? user.username : "Guest" %></h1>
+          </div>
+
+      <span class="indexheader" id="34934914fdafdaf">
+        Friends (0)
+      </span>
+
+      <div class="friendslist secondary" id="friendslistpage">
+
+      </div>
+
+      <script>
+              function escapeHTML(str) { return str.toString() .replaceAll("&", "&amp;") .replaceAll("<", "&lt;") .replaceAll(">", "&gt;") .replaceAll('"', "&quot;") .replaceAll("'", "&#039;"); }
+
+
+      async function loadFriends() {
+        const container = document.getElementById("friendslistpage");
+
+        const res = await fetch(`/api/friends/list?userId=<%= user ? user.id : 0 %>`);
+        const data = await res.json();
+
+        let count = 0
+
+        let toadd = ""
+
+        for (const i of data["friends"]) {
+          count += 1
+
+          let status = ""
+          const diff = data.now - i.last_online;
+
+        if (diff < 30) {
+          status = "onlinestatus";
+          if (i.gamename) {
+            status = "gamestatus"
+          }
+        }
+
+
+
+          toadd += `<a href="/profile/${escapeHTML(i["id"])}" class="fitem">
+
+            <div class="profilepicfriend">
+              <img class="friendpic" src="/headshots/${escapeHTML(i["id"])}">
+              <div class="status ${status}"></div>
+            </div>
+            <div class="otherstuff">
+              <span class="gamelink">${escapeHTML(i["gamename"] || "")}</span>
+
+              <span class="friendusername">${escapeHTML(i["username"])}</span>
+            </div>
+
+
+        </a>`
+
+        }
+
+        document.getElementById("34934914fdafdaf").textContent = `Friends (${count})`
+        container.innerHTML = toadd
+
+      }
+
+      loadFriends();
+      </script>
+
+
+
+      <div>
+          <%- include("gamespot") %>
+      </div>
+      
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+  
+</body>
+</html>

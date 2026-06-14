@@ -1,0 +1,393 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Vexlo</title>
+
+    <%- include("partials/embeds") %>
+
+
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+    <p>Avatar</p>
+    <div id="viewavatar3d">
+
+    </div>
+    <div class="bodycolor">
+      <p>Avatar Colors</p>
+
+      <div class="bodycolorsinn">
+
+        <div class="pickcolors" id="colorpicker" style="display: none;">
+            <p>Pick a Color</p>
+          <div class="colorslists">
+
+            <div class="colorslist">
+
+              <div class="pickcolor" style="background-color: rgb(255, 205, 148)"></div>
+              <div class="pickcolor" style="background-color: rgb(239, 184, 130)"></div>
+              <div class="pickcolor" style="background-color: rgb(198, 134, 66)"></div>
+              <div class="pickcolor" style="background-color: rgb(160, 110, 70)"></div>
+              <div class="pickcolor" style="background-color: rgb(120, 80, 50)"></div>
+              <div class="pickcolor" style="background-color: rgb(90, 60, 40)"></div>
+
+            </div>
+            <div class="colorslist">
+
+              <div class="pickcolor" style="background-color: rgb(255, 0, 0)"></div>
+              <div class="pickcolor" style="background-color: rgb(0, 255, 0)"></div>
+              <div class="pickcolor" style="background-color: rgb(0, 0, 255)"></div>
+              <div class="pickcolor" style="background-color: rgb(255, 255, 0)"></div>
+              <div class="pickcolor" style="background-color: rgb(0, 255, 255)"></div>
+              <div class="pickcolor" style="background-color: rgb(255, 0, 255)"></div>
+            </div> 
+            <div class="colorslist">
+
+              <div class="pickcolor" style="background-color: rgb(255, 128, 0)"></div>
+              <div class="pickcolor" style="background-color: rgb(255, 0, 128)"></div>
+              <div class="pickcolor" style="background-color: rgb(128, 255, 0)"></div>
+              <div class="pickcolor" style="background-color: rgb(0, 255, 128)"></div>
+              <div class="pickcolor" style="background-color: rgb(128, 0, 255)"></div>
+              <div class="pickcolor" style="background-color: rgb(0, 128, 255)"></div>
+
+
+            </div>
+            <div class="colorslist">
+              <div class="pickcolor" style="background-color: rgb(60, 60, 60)"></div>
+              <div class="pickcolor" style="background-color: rgb(80, 80, 80)"></div>
+              <div class="pickcolor" style="background-color: rgb(120, 120, 120)"></div>
+              <div class="pickcolor" style="background-color: rgb(160, 160, 160)"></div>
+              <div class="pickcolor" style="background-color: rgb(200, 200, 200)"></div>
+              <div class="pickcolor" style="background-color: rgb(255, 255, 255)"></div>
+
+
+            </div>
+
+
+
+          </div>
+                  
+
+          </div>
+
+   
+
+        <div class="avatarbodycolors">
+          <div class="avatarhead" id="Head"></div>
+          <div class="limbsntorso">
+            <div class="limb" id="RightArm"></div>
+            <div class="avatarTorso" id="Torso"></div>
+            <div class="limb" id="LeftArm"></div>
+          </div>
+          <div class="legs">
+            <div class="limb" id="RightLeg"></div>
+            <div class="limb" id="LeftLeg"></div>
+          </div>
+
+        </div>
+
+             </div>
+      </div>
+
+
+      <script type="module">
+        import * as THREE from '/three/three.module.js';
+        import { EXRLoader } from '/three/exrloader.js';
+
+        import { DecalGeometry } from '/three/DecalGeometry.js';
+        import { GLTFLoader } from '/three/GLTFLoader.js';
+
+        let AVATAR;
+
+    let assetsReady = {
+      model: false,
+      env: false,
+      avatar: false,
+    };
+
+        async function loadAvatar() {
+          try {
+            const res = await fetch(`/api/avatar/${window.USERID}`);
+            const data = await res.json();
+
+            if (data) {
+              AVATAR = data;
+              applyAvatarColors();
+            }
+            assetsReady.avatar = true;
+          } catch (err) {
+            console.error("Failed to load avatar", err);
+          }
+        }
+
+
+        const limbs = {
+          "Head": document.getElementById("Head"),
+          "Torso": document.getElementById("Torso"),
+          "LeftArm": document.getElementById("LeftArm"),
+          "RightArm": document.getElementById("RightArm"),
+          "LeftLeg": document.getElementById("LeftLeg"),
+          "RightLeg": document.getElementById("RightLeg"),
+        }
+        const cpick = document.getElementById("colorpicker")
+        let selectedLimb = null;
+        let avatarParts = {}
+
+
+        function applyAvatarColors() {
+          if (!AVATAR) return;
+
+          Object.entries(AVATAR).forEach(([limb, color]) => {
+            const mesh = avatarParts[limb];
+
+            if (!mesh) {
+              console.warn("Missing mesh:", limb);
+              return;
+            }
+
+            mesh.material = mesh.material.clone();
+            mesh.material.color.set(color);
+            limbs[limb].style.backgroundColor = color
+          });
+        }
+
+        
+        for (const limbname of Object.keys(limbs)) {
+          const div = limbs[limbname]
+
+          div.onclick = function() {
+            selectedLimb = limbs[limbname];
+            cpick.style.display = ""
+
+          }
+        }
+        function rgbToHex(rgb) {
+          const result = rgb.match(/\d+/g);
+          if (!result) return rgb;
+
+          return (
+            "#" +
+            result
+              .slice(0, 3)
+              .map((x) => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+              })
+              .join("")
+          );
+        }
+
+
+        document.querySelectorAll(".pickcolor").forEach((c) => {
+          c.onclick = async function () {
+            if (!selectedLimb) return;
+
+            const rgb = this.style.backgroundColor;
+            const hex = rgbToHex(rgb);
+            const limb = selectedLimb.id;
+            console.log(limb)
+            console.log(avatarParts)
+            const MESH = avatarParts[limb]
+
+            MESH.material = MESH.material.clone();
+            MESH.material.color.set(hex);
+
+            console.log(MESH)
+            AVATAR[limb] = hex
+
+            await fetch("/api/avatar", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(AVATAR)
+            });
+
+            selectedLimb.style.backgroundColor = rgb;
+            cpick.style.display = "none";
+            downloadHeadshot()
+          };
+        });
+                
+
+
+        const container = document.getElementById("viewavatar3d");
+
+        // Scene
+        const scene = new THREE.Scene();
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(
+          50,
+          container.clientWidth / container.clientHeight,
+          0.1,
+          1000
+        );
+        camera.position.set(0, 0, 10);
+
+        const headshotCamera = new THREE.PerspectiveCamera(
+                  35,
+                  1, // square image
+                  0.1,
+                  1000
+                );
+
+          headshotCamera.position.set(2, 2, 4);
+          headshotCamera.rotation.set(0, 0.5, 0);
+
+          const headshotRenderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: true
+        });
+
+        headshotRenderer.setSize(64, 64);
+
+        function generateHeadshotBlob() {
+          if (!avatar) return null;
+
+          // optional framing
+          avatar.position.set(0, 0, 0);
+          avatar.rotation.y = Math.PI;
+
+          headshotRenderer.render(scene, headshotCamera);
+
+          return new Promise((resolve) => {
+            headshotRenderer.domElement.toBlob((blob) => {
+              resolve(blob)
+            }, "image/png");
+          });
+        }
+
+        async function downloadHeadshot() {
+          const blob = await generateHeadshotBlob();
+
+          const res = await fetch("/api/avatarheadshot", {
+            method: "POST",
+            headers: {
+              "Content-Type": "image/png"
+            },
+            body: blob
+          });
+
+          const data = await res.json();
+
+          return data;
+        }
+
+        const exrloader = new EXRLoader();
+
+        exrloader.load('/sky.exr', function (texture) {
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          scene.background = texture;
+          scene.environment = texture;
+          assetsReady.env = true;
+        });
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+
+        // Load GLB avatar
+        const loader = new GLTFLoader();
+        let avatar;
+
+      loader.load("/char.glb", async (gltf) => {
+        avatar = gltf.scene;
+
+        avatar.traverse((obj) => {
+          if (obj.isMesh) {
+            obj.material.depthWrite = true;
+            obj.material.depthTest = true;
+
+            avatarParts[obj.name] = obj;
+            obj.material.color.set("#C8C8C8");
+          }
+        });
+
+        avatar.position.set(0, 0, 0);
+        scene.add(avatar);
+        assetsReady.model = true;
+
+        // 👇 NOW load avatar AFTER meshes exist
+        await loadAvatar();
+      });
+
+        // Resize handling
+        window.addEventListener("resize", () => {
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        const target = new THREE.Vector3(0, 0, 0);
+        const radius = 10;
+        let isDragging = false;
+        let previousMouse = { x: 0, y: 0 };
+
+        let rotation = { x: 0, y: Math.PI + 0.2 };
+
+        // Render loop
+        function animate() {
+          requestAnimationFrame(animate);
+
+          const x = radius * Math.sin(rotation.y) * Math.cos(rotation.x);
+          const y = radius * Math.sin(rotation.x);
+          const z = radius * Math.cos(rotation.y) * Math.cos(rotation.x);
+
+          camera.position.set(x, y + 1.5, z);
+          camera.lookAt(target);
+
+          renderer.render(scene, camera);
+        }
+        animate();
+
+
+
+        container.addEventListener("mousedown", (e) => {
+          isDragging = true;
+          previousMouse = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener("mouseup", () => {
+          isDragging = false;
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          if (!isDragging) return;
+
+          const deltaX = e.clientX - previousMouse.x;
+          const deltaY = e.clientY - previousMouse.y;
+
+          rotation.y -= deltaX * 0.005;
+          rotation.x += deltaY * 0.005;
+
+          rotation.x = Math.max(-1.2, Math.min(1.2, rotation.x));
+
+          previousMouse = { x: e.clientX, y: e.clientY };
+        });
+
+
+      </script>
+
+
+
+
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+  
+</body>
+</html>

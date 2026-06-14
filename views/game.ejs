@@ -1,0 +1,286 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title><%= game.name %> - Vexlo</title>
+
+    <meta name="title" content="Vexlo">
+    <meta name="description" content="<%= game.description || "No description yet." %> - Vexlo is a browser-based multiplayer platform, focused on creativity, user-made games">
+    <!-- Open Graph / Discord / Facebook / iMessage -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://vexlo.website/">
+    <meta property="og:title" content="<%= game.name %> - Vexlo">
+    <meta property="og:description" content="<%= game.description || "No description yet." %> - Vexlo is a browser-based multiplayer platform, focused on creativity, user-made games">
+    <meta property="og:image" content="http://localhost:3000/logo/100.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yourdomain.com">
+    <meta property="twitter:title" content="<%= game.name %> - Vexlo">
+    <meta property="twitter:description" content="<%= game.description || "No description yet." %> - Vexlo is a browser-based multiplayer platform, focused on creativity, user-made games">
+    <meta property="twitter:image" content="http://localhost:3000/logo/100.png">
+
+    <style>
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .game-header {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .game-thumb {
+            width: 200px;
+            height: 200px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .game-info {
+            flex: 1;
+        }
+
+        .game-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .game-meta {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            padding: 12px 60px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .play-btn:hover {
+            background: #45a049;
+        }
+
+        .game-description {
+            margin-top: 25px;
+            line-height: 1.6;
+        }
+
+        .game-stats {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #bbb;
+        }
+        .game-players {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.game-likes {
+  font-size: 12px;
+  color: #aaa;
+}
+.rating-bar {
+  width: 50%;
+  height: 5px;
+  background: #333;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.rating-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 999px;
+}
+
+.game-rating-text {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  width: 50%;
+}
+.icon {
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+}
+.ratetext {
+    font-size: x-large;
+}
+.game-players {
+    font-size: large;
+}
+.ratebtn {
+    cursor: pointer;
+}
+
+    </style>
+</head>
+
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+    <div class="content">
+      <div class="game-container">
+
+        <div class="game-header">
+          <img 
+            class="game-thumb" 
+            src="/gamethumbnails/<%= game.thumbnail %>"
+            alt="thumbnail"
+          >
+
+          <div class="game-info">
+            <div class="game-title">
+                <span><%= game.name %></span>
+                
+                <% if (user && user.id === game.owner_id) { %>
+                    <a href="/studio/<%= game.id %>" target="_blank">
+                        <button>Edit</button>
+                    </a>
+                    <a href="/gamesettings/<%= game.id %>">
+                        <button>Settings</button>
+                    </a>
+            
+                <% } %>
+            
+            </div>
+
+            <div class="game-meta">
+              By <a href="/profile/<%= ownerID %>"><%= owner %></a><br>
+              Created: <%= new Date(game.created_at).toLocaleDateString() %>
+            </div>
+            <% if (canplay) { %>
+            <button class="play-btn" onclick="playGame()">Play</button>
+            <% } else { %>
+            <button class="play-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                This game is private
+            </button>
+            <% } %>
+            <br><br>
+            <div class="game-players"><%= playerCount %> playing</div>
+  
+
+            <div class="rating-bar">
+                <div class="rating-fill" style="width: <%= percent %>%"></div>
+            </div>
+            <div class="game-rating-text">
+                <span class="like ratebtn" id="likebtn">
+                <svg viewBox="0 0 24 24" class="icon like-icon whiteimg">
+                    <path d="M2 21h4V9H2v12zm20-11c0-1.1-.9-2-2-2h-6.3l.9-4.3v-.3c0-.4-.2-.8-.4-1.1L13 2 7.6 7.4C7.2 7.8 7 8.4 7 9v10c0 1.1.9 2 2 2h7c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-1z"/>
+                </svg>
+                <span class="ratetext"><%= likes %></span>
+                </span>
+
+                <span class="dislike ratebtn" id="dislikebtn">
+                <svg viewBox="0 0 24 24" class="icon dislike-icon whiteimg">
+                    <path d="M22 3h-4v12h4V3zM2 14c0 1.1.9 2 2 2h6.3l-.9 4.3v.3c0 .4.2.8.4 1.1L11 22l5.4-5.4c.4-.4.6-1 .6-1.6V5c0-1.1-.9-2-2-2H8c-.8 0-1.5.5-1.8 1.2l-3 7c-.1.2-.2.5-.2.8v1z"/>
+                </svg>
+                <span class="ratetext"><%= dislikes %></span>
+                </span>
+                <script>
+                function updateratings(data) {
+                    document.querySelector("#likebtn .ratetext").innerText = data.likes;
+                    document.querySelector("#dislikebtn .ratetext").innerText = data.dislikes;
+
+                    const likes = data.likes || 0;
+                    const dislikes = data.dislikes || 0;
+                    const total = likes + dislikes;
+
+                    const percent = total > 0
+                        ? Math.round((likes / total) * 100)
+                        : 50;
+
+                    document.querySelector(".rating-fill").style.width = percent + "%";
+                }
+
+                const gameId = "<%= game.id %>";
+
+                document.getElementById("likebtn").onclick = async function () {
+                    const res = await fetch(`/api/games/${gameId}/like`, {
+                        method: "POST"
+                    });
+
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    updateratings(data)
+                };
+
+                document.getElementById("dislikebtn").onclick = async function () {
+                    const res = await fetch(`/api/games/${gameId}/dislike`, {
+                        method: "POST"
+                    });
+
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+                    updateratings(data)   
+                };
+                </script>
+                
+            </div>
+
+          </div>
+        </div>
+
+        <div class="game-description">
+          <h3>Description</h3>
+          <p><%= game.description || "No description yet." %></p>
+        </div>
+
+        <div class="game-stats">
+          Updated: <%= new Date(game.updated_at).toLocaleString() %>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+async function playGame() {
+    try {
+        const res = await fetch("/api/games/join/<%= game.id %>", {
+            method: "POST"
+        });
+
+        if (!res.ok) {
+            banneralert("Unknown Error", "error");
+            return;
+        }
+
+        const data = await res.json();
+
+        localStorage.setItem("gamename", "<%= game.name %>")
+        localStorage.setItem("gamethumb","<%= game.thumbnail%>")
+
+        window.location.href = ("/client?ticket=" + data.ticket) 
+    } catch (err) {
+        console.error(err);
+        banneralert("Unknown Error", "error");
+    }
+}
+</script>
+
+</body>
+</html>

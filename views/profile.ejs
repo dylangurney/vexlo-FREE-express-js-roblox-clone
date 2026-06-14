@@ -1,0 +1,179 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Profile - <%= username %></title>
+    <%- include("partials/embeds") %>
+</head>
+<body>
+
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+
+    <%- include("partials/sidenav") %>
+
+    <div class="content">
+
+      <div class="profile-card">
+
+        <div class="profile-box">
+
+          <div class="thingo">
+            <div class="profilepic">
+              <img class="welcomepic"
+                  src="/headshots/<%= userid %>">
+              <div class="status <%= status %>">
+                <span class="ingame">
+                  <%= gamename %>
+                </span>
+              </div>
+            </div>
+            <h1 class="profileusername"><%= username %></h1>
+          </div>
+
+
+          <div class="friendbuttons">
+
+            <% if (notmyprofile) { %>
+                <% if (relation === "none") { %>
+                  <button class="friendbtn add" onclick="sendfriendreq()">Send Friend Request</button>
+
+                <% } else if (relation === "outgoing") { %>
+                  <button class="friendbtn pending" disabled>Pending</button>
+
+                <% } else if (relation === "incoming") { %>
+                  <button class="friendbtn accept" onclick="acceptfriendreq()">Accept Friend Request</button>
+
+                <% } else if (relation === "friends") { %>
+                  <button class="friendbtn remove" onclick="removefriend()">Remove Friend</button>
+                <% } %>
+
+                <% if (gamename != "") { %>
+                  <button class="friendbtn accept" onclick="joinjobid('<%= jobid %>', '<%= gameid %>')">Join <%= gamename %></button>
+                <% } %>
+            <% } %>
+
+            <script>
+              const profileUserId = "<%= userid %>"
+
+
+              async function joinjobid(JOBID, gameid) {
+                  const res = await fetch(`/api/games/joinjobid/${JOBID}/${gameid}`, {
+                      method: "POST"
+                  });
+                  if (!res.ok) {
+                      banneralert("Unknown Error", "error");
+                      return;
+                  }
+
+                  const data = await res.json();
+
+                  localStorage.setItem("gamename", "<%= gamename %>")
+                  localStorage.setItem("gamethumb","<%= gamethumb %>")
+
+                  window.location.href = ("/client?ticket=" + data.ticket) 
+
+              }
+
+              async function removefriend() {
+                try {
+                  const res = await fetch("/api/friends/remove", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      friendId: profileUserId
+                    })
+                  });
+
+                  if (!res.ok) {
+                    const text = await res.text();
+                    console.log("Failed:", text);
+                    return;
+                  }
+
+                  window.location.reload()
+
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+
+
+              async function acceptfriendreq() {
+                try {
+                  const res = await fetch("/api/friends/accept", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      friendId: profileUserId
+                    })
+                  });
+
+                  if (!res.ok) {
+                    const text = await res.text();
+                    console.log("Failed:", text);
+                    return;
+                  }
+
+                  window.location.reload()
+
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+
+              async function sendfriendreq() {
+                try {
+                  const res = await fetch("/api/friends/request", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      friendId: profileUserId
+                    })
+                  });
+
+                  if (!res.ok) {
+                    const text = await res.text();
+                    console.log("Failed:", text);
+                    return;
+                  }
+
+                  window.location.reload()
+
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+
+            </script>
+
+          </div>
+
+          </div>
+
+   
+        
+
+      </div>
+
+
+             <div>
+            Last Online: <%= LASTONLINE %>
+          </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

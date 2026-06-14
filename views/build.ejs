@@ -1,0 +1,121 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Build - Vexlo</title>
+    <%- include("partials/embeds") %>
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+    <div class="content">
+      <div class="creationframe">
+        <button id="makegamebtn">Create New Game</button>
+
+      <script>
+      document.getElementById("makegamebtn").addEventListener("click", async () => {
+        const res = await fetch("/api/games/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+        });
+
+        await res.json();
+  
+        refresh_games_list()
+      });
+      </script>
+
+
+        <span>
+          Games
+        </span>
+        <br><br>
+        <div class="creationitems">
+          
+
+
+
+
+          </div>
+<script>
+  function escapeHTML(str) { return str.toString() .replaceAll("&", "&amp;") .replaceAll("<", "&lt;") .replaceAll(">", "&gt;") .replaceAll('"', "&quot;") .replaceAll("'", "&#039;"); }
+  function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+
+  return (bytes / Math.pow(1024, i)).toFixed(1) + " " + sizes[i];
+}
+  async function refresh_games_list() {
+    const container = document.querySelector(".creationitems");
+
+    const res = await fetch("/api/games/list");
+    const games = await res.json();
+
+    container.innerHTML = "";
+
+    for (const game of games) {
+      const el = document.createElement("div");
+      el.className = "creation-item";
+
+      el.innerHTML = `
+        <div class="creation-item__left">
+          <img src="${ escapeHTML('/gamethumbnails/' + game.thumbnail) }" class="bgamethumb" alt="Game thumbnail" />
+
+          <div>
+            <a href="/game/${game.id}" class="creation-item__title nav-item">
+              <span>${escapeHTML(game.name)}</span>
+            </a>
+
+            <div class="creation-meta">
+              <span>ID: ${game.id}</span>
+              <span>•</span>
+              <span>${formatBytes(game.data_size || 0)}</span>
+            </div>
+          </div>
+
+          <span class="creation-item__visibility">
+            ${game.is_public ? "Public" : "Private"}
+          </span>
+        </div>
+
+        <div class="creation-item__right">
+          <a href="/studio/${game.id}" target="_blank">
+            <button>Edit</button>
+          </a>
+
+          <a href="/gamesettings/${game.id}">
+            <button>Settings</button>
+          </a>
+        </div>
+      `;
+
+      container.appendChild(el);
+    }
+  }
+
+  window.refresh_games_list = refresh_games_list;
+
+  refresh_games_list();
+  </script>
+
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+  
+</body>
+</html>

@@ -1,0 +1,21 @@
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+
+  script-src 'self' 'unsafe-inline' blob: 'unsafe-eval';
+
+  style-src 'self' 'unsafe-inline';
+
+  img-src 'self' data: blob: https://blockly-demo.appspot.com;
+
+  connect-src 'self' blob: ws: wss: https://blockly-demo.appspot.com;
+
+  media-src 'self' blob: https://blockly-demo.appspot.com;
+
+  worker-src 'self' blob:;
+
+  object-src 'none';
+  base-uri 'self';
+">
+<link rel="icon" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">

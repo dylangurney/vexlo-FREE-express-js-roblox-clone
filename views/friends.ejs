@@ -1,0 +1,83 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Vexlo</title>
+
+    <%- include("partials/embeds") %>
+
+
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+    <p>Friend Requests</p>
+    <div class="friendrequests" id="frf9efhuaef">
+
+    </div>
+    <script>
+      function escapeHTML(str) { return str.toString() .replaceAll("&", "&amp;") .replaceAll("<", "&lt;") .replaceAll(">", "&gt;") .replaceAll('"', "&quot;") .replaceAll("'", "&#039;"); }
+
+              async function acceptfriendreq(profileUserId) {
+                try {
+                  const res = await fetch("/api/friends/accept", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                      friendId: profileUserId
+                    })
+                  });
+
+                  if (!res.ok) {
+                    const text = await res.text();
+                    console.log("Failed:", text);
+                    return;
+                  }
+
+                  window.location.reload()
+
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+
+      async function loadallrequests() {
+        const f = await fetch("/api/friends/requests")
+        const f1 = await f.json()
+        let toplace = ""
+        for (const i of f1["requests"]) {
+          toplace += `<div class="secondary">
+          <a href="/profile/${escapeHTML(i["id"])}" class="fitem incomingreq">
+              <img class="friendpic" src="/headshots/${escapeHTML(i["id"])}">
+              <span class="friendusername">${escapeHTML(i["username"])}</span>
+              <button class="friendbtn accept reqaccept" onclick="acceptfriendreq(${escapeHTML(i["id"])})">Accept</button>
+          </a>
+        </div>`
+
+        }
+
+        document.getElementById("frf9efhuaef").innerHTML = toplace
+        
+      }
+      loadallrequests()
+    </script>
+
+
+
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+  
+</body>
+</html>

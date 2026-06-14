@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <%- include("partials/csp") %>
+  <title>Vexlo Studio</title>
+  <%- include("partials/embeds") %>
+
+
+
+  <link rel="stylesheet" href="/studio.css">
+  <script>
+    const pathParts = window.location.pathname.split("/");
+    window.EDITING_ID = pathParts[pathParts.length - 1];
+
+    window.IS_DIRTY = false;
+  </script>
+  <script src="/script_interpreter.js"></script>
+
+</head>
+
+<body>
+
+  <div class="topbar">
+
+    <!-- TOOL ROW -->
+    <div class="secondtop">
+      <div class="tools">
+        
+
+        <div class="tool" id="savevex"><img class="iconimage whiteimg" src="/download.svg">Save to .vexl</div>
+        <div class="tool" id="loadvex"><img class="iconimage whiteimg" src="/load.svg">Load From .vexl</div>
+
+        <div class="tool" id="publishvex"><img class="iconimage whiteimg" src="/publish.svg">Publish to Vexlo</div>
+      </div>
+
+      <div class="tools">
+         <!-- 
+        <div class="tool">Select</div>
+        <div class="tool">Move</div>
+        <div class="tool">Scale</div>
+        <div class="tool">Rotate</div>
+        -->
+      </div>
+
+      <div class="testing">
+        <div class="tool" id="playbtn">Play Test</div>
+      </div>
+
+      <div class="insert">
+        <div class="tool" id="insertObject">Insert Object</div>
+         <!--  <div class="tool">Color</div>-->
+      </div>
+
+    </div>
+
+
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TABS -->
+
+
+    <div class="panel" id="properties">
+      <h3>Properties</h3>
+
+      <div id="propstree">
+
+
+
+      </div>
+    </div>
+
+    <div class="canvas" id="display3darea">
+      <div class="tabs" id="tabs">
+
+      </div>
+
+      <div id="DISPLAY3dREAL">
+
+      </div>
+
+      <div id="output">
+        <h3>Output</h3>
+
+        <div id="outputLog"></div>
+
+        <script>
+          const log = document.getElementById("outputLog");
+          let start = Date.now()
+          function getServerTimeNow() {
+            return Date.now() - start
+          }
+
+          function COOLoutput(type, text, Context = "", ScriptName = "") {
+
+            const line = document.createElement("div");
+            line.className = "log-line";
+
+            const code = document.createElement("code");
+
+            let madetext =
+              `${getServerTimeNow()} ${text} ${Context} ${ScriptName}`.trim();
+
+            code.textContent = madetext;
+
+            if (type === 1) {
+              code.style.color = "orange";
+            } else if (type === 2) {
+              code.style.color = "red";
+            } else {
+              code.style.color = "white";
+            }
+
+            line.appendChild(code);
+
+            // 👇 insert at TOP instead of bottom
+            log.prepend(line);
+
+            // 👇 enforce max 20 lines
+            while (log.children.length > 20) {
+              log.removeChild(log.lastChild);
+            }
+          }
+
+window.addEventListener("message", (event) => {
+    if (event.data?.type === "COOLOUTPUT") {
+        const { level, text, context, script } = event.data;
+
+        COOLoutput(level, text, context, script);
+    }
+});
+        </script>
+      </div>
+
+    </div>
+
+
+
+    <div class="panel" id="explorer">
+      <h3>Explorer</h3>
+      <div id="explorerTree">
+
+
+
+      </div>
+
+
+
+    </div>
+
+    <div id="insertPopup" class="popup hidden">
+      <div class="popup-content">
+        <input id="insertSearch" placeholder="Search objects..." />
+
+        <div id="objectList">
+
+
+        </div>
+        <br><br><br>
+        <div id="closeInsert" class="tool">Close</div>
+      </div>
+    </div>
+
+    <div id="publishPopup" class="popup hidden">
+      <div class="popup-content">
+        <h2>Publish Game</h2>
+
+        
+
+        <div class="popstuff">
+          <div id="pub1" class="popup-actions hidden">
+            <p>Are you sure you want to publish this game?</p>
+            <div id="cancelPublish" class="tool secondary">Cancel</div>
+            <div id="confirmPublish" class="tool">Publish</div>
+          </div>
+          <div id="pub2" class="loadingstuff popup-actions hidden">
+            <div class="loadingtext">Loading...</div>
+            <div class="loadingbar">
+              <div class="loadingfill"></div>
+            </div>
+            <div id="cancelpublishrunning" class="tool secondary">Cancel</div>
+          </div>
+          <div id="pub3" class="donebtn popup-actions hidden">
+            <div id="donepublishbtn" class="tool">Done</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import * as THREE from '/three/three.module.js';
+      import { EXRLoader } from '/three/exrloader.js';
+      import Stats from '/three/stats.module.js';
+      import { DecalGeometry } from '/three/DecalGeometry.js';
+      import { GLTFLoader } from '/three/GLTFLoader.js';
+
+
+      window.THREE = THREE
+      window.EXRLoader = EXRLoader
+      window.Stats = Stats
+      window.DecalGeometry = DecalGeometry
+      window.GLTFLoader = GLTFLoader
+
+
+      window.opentabs = {};
+      window.tabHistory = [];
+
+      const SCRIPTINGiframes = new Map();
+
+      function openTAB(tabID) {
+        for (const i of Object.keys(opentabs)) {
+          opentabs[i][1].style.display = "none";
+          opentabs[i][0].classList.remove("selected");
+        }
+
+        // remove if already in history (avoid duplicates)
+        tabHistory = tabHistory.filter(id => id !== tabID);
+
+        // push to front (most recent)
+        tabHistory.unshift(tabID);
+
+        opentabs[tabID][1].style.display = "";
+        opentabs[tabID][0].classList.add("selected");
+      }
+
+      window.openTAB = openTAB
+
+      function createTAB(tabName, tabicon, VISIBLEDOM, noclose, tabID) {
+        if (opentabs[tabID]) {
+          //already exists return tab
+          return tabID
+        }
+
+
+        const tab = document.createElement("div");
+        tab.className = "tab";
+        tab.dataset.id = tabID;
+
+        VISIBLEDOM.style.display = "none";
+
+        tab.innerHTML = `
+        <img class="iconimage whiteimg" src="${tabicon}">
+        <span>${tabName}</span>
+        ${noclose ? "" : `<button class="tab-close">×</button>`}
+      `;
+
+        document.getElementById("tabs").appendChild(tab);
+
+        opentabs[tabID] = [tab, VISIBLEDOM, noclose];
+
+        // only attach close if allowed
+        if (!noclose) {
+          const closeBtn = tab.querySelector(".tab-close");
+
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+
+            const [tab, dom] = opentabs[tabID];
+
+            tab.remove();
+            dom.remove();
+            delete opentabs[tabID];
+
+            // remove from history
+            tabHistory = tabHistory.filter(id => id !== tabID);
+
+            // open last tab
+            const last = tabHistory[0];
+            if (last && opentabs[last]) {
+              openTAB(last);
+            }
+          };
+        }
+
+        tab.onclick = (e) => {
+          e.stopPropagation();
+          openTAB(tabID);
+        };
+
+        return tabID;
+      }
+
+      window.createTAB = createTAB
+
+
+
+
+      window.PLAYTESTING = false
+
+      window.GAME_MODEL_ID = "GAME_MODEL_ID"
+      window.GAMEMODEL = {
+        [GAME_MODEL_ID]: {
+          children: [],
+          props: {
+            ClassName: "game",
+            Name: "game"
+          },
+        }
+
+      }
+
+      let oldscripts = []
+
+      async function LOADVEXL_FROM_ARRAY_BUFFER(buffer) {
+        for (const i of oldscripts) {
+          i.remove()
+        }
+        console.log("Loaded file bytes:", buffer.byteLength);
+
+        const decompressed = await new Response(
+          new Blob([buffer]).stream().pipeThrough(new DecompressionStream("gzip"))
+        ).arrayBuffer();
+
+        const json = new TextDecoder().decode(decompressed);
+        window.GAMEMODEL = JSON.parse(json);
+
+        update_explorer()
+        update_properties_tab(selectedNode)
+
+        selectedNode = null;
+        openState = {};
+        
+        document.getElementById("tabs").innerHTML = ""
+
+        opentabs = {};
+        tabHistory = [];
+
+
+
+        const script = document.createElement("script");
+        script.src = "/studioload.js"
+        document.body.appendChild(script);
+        oldscripts.push(script)
+        for (const i of oldscripts) {
+          i.remove()
+        }
+        destroyThreeCanvas()
+        script.loaded
+
+        script.onload = async () => {
+          console.log("studioload.js loaded");
+
+          destroyThreeCanvas();
+
+          await load_3dstuff();
+
+
+          update_explorer()
+          update_properties_tab(selectedNode)
+
+        };
+
+
+      }
+
+      window.ID_TO_MESH = {}
+      window.DECAL_FOR_PART_ID = {}
+
+      async function load_world() {
+        const id = window.EDITING_ID;
+
+        if (!id) {
+          console.error("Missing EDITING_ID");
+          return;
+        }
+
+        try {
+          const r = await fetch(`/api/games/vexl/${id}`);
+
+          if (!r.ok) {
+            console.error("Failed to load VEXL:", r.status);
+            return;
+          }
+
+          const buffer = await r.arrayBuffer();
+
+          await LOADVEXL_FROM_ARRAY_BUFFER(buffer);
+
+          console.log("Default game loaded");
+        } catch (err) {
+          console.error("Error loading default VEXL:", err);
+        }
+      }
+
+
+
+
+      window.obj_prop_changing = false
+
+      function update_properties_tab(ID) {
+        const propstree = document.getElementById("propstree")
+        propstree.innerHTML = "";
+        if (!ID) {
+          return
+        }
+        if (!window.GAMEMODEL[ID]) {
+          return
+        }
+        const props = window.GAMEMODEL[ID].props
+
+        function dostuffwithit(htmlitem) {
+          const propnode = document.createElement("div")
+          propnode.className = "propnode";
+
+          propnode.innerHTML = htmlitem
+
+
+
+          propstree.appendChild(propnode)
+          return propnode
+        }
+
+
+
+        for (const name of Object.keys(props)) {
+          const v = props[name]
+
+          const proptype = prop_types[name]
+
+
+          if (proptype == "String") {
+
+            let disabled = props_readonly.includes(name);
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+                <input class="propvalue" value="${escapeHTML(v)}" placeholder="Enter a String.." ${disabled ? "readonly" : ""}>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+            let input = propnode.querySelector(".propvalue");
+
+            input.addEventListener("blur", () => {
+              let newv = input.value.toString()
+
+              if (newv) {
+                window.GAMEMODEL[ID].props[name] = newv
+                window.IS_DIRTY = true
+              }
+
+              update_properties_tab(selectedNode.id)
+              update_explorer()
+
+              UpdateOBJ_asrendered(ID)
+            });
+
+
+          } else if (proptype == "Number") {
+
+            let disabled = props_readonly.includes(name);
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+                <input class="propvalue" value="${escapeHTML(v)}" placeholder="Enter a Number.." ${disabled ? "readonly" : ""}>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+            let input = propnode.querySelector(".propvalue");
+
+            input.addEventListener("blur", () => {
+              let newv = parseInt(input.value, 10)
+
+              if (newv) {
+                window.GAMEMODEL[ID].props[name] = newv
+                window.IS_DIRTY = true
+              }
+
+              update_properties_tab(selectedNode.id)
+              update_explorer()
+              UpdateOBJ_asrendered(ID)
+            });
+
+
+          } else if (proptype == "Object") {
+
+
+            let objname = ""
+
+            if (props[name] && window.GAMEMODEL[props[name]]) {
+              objname = window.GAMEMODEL[props[name]].props["Name"]
+            }
+
+            let disabled = (v === GAME_MODEL_ID);
+
+            let htmlitem = `
+              <div class="propitem">
+                <span class="propname">${escapeHTML(name)}</span>
+                <button class="propvalueobjectbtn" ${disabled ? "disabled" : ""}>${escapeHTML(objname)}</button>
+
+                <button class="propvalueobjectbtnNULL">
+                  <img src="/cross.svg" class="btnnullic whiteimg">
+                  </button>
+              </div>`
+            let propnode = dostuffwithit(htmlitem)
+
+            propnode.querySelector(".propvalueobjectbtn").onclick = function () {
+              if (window.obj_prop_changing) {
+                document.body.classList.remove("pickmode");
+
+                propnode.querySelector(".propvalueobjectbtn").disabled = false
+                window.obj_prop_changing = false
+              } else {
+                window.obj_prop_changing = { ID, name }
+                document.body.classList.add("pickmode");
+                propnode.querySelector(".propvalueobjectbtn").disabled = true
+              }
+            }
+
+            propnode.querySelector(".propvalueobjectbtnNULL").onclick = function () {
+                window.GAMEMODEL[ID].props[name] = null;
+                window.IS_DIRTY = true
+
+                update_properties_tab(selectedNode.id);
+                update_explorer();
+                UpdateOBJ_asrendered(ID)
+            }
+
+          } else if (proptype == "Vector3") {
+
+            let disabled = props_readonly.includes(name);
+
+            let visibleVector3 = Object.values(v).join(", ");
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+                <input class="propvalue" value="${escapeHTML(visibleVector3)}" placeholder="Enter a Vector 3.." ${disabled ? "readonly" : ""}>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+            let input = propnode.querySelector(".propvalue");
+
+            input.addEventListener("blur", () => {
+
+              let raw = input.value;
+
+              // detect vector3 format
+              if (raw.includes(",")) {
+
+                let parts = raw.split(",").map(v => parseFloat(v.trim()));
+
+                if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+                  window.GAMEMODEL[ID].props[name] = {
+                    x: parts[0],
+                    y: parts[1],
+                    z: parts[2]
+                  };
+                  window.IS_DIRTY = true
+                }
+
+              } else {
+
+                let newv = parseFloat(raw);
+
+                if (!isNaN(newv)) {
+                  window.GAMEMODEL[ID].props[name] = newv;
+                  window.IS_DIRTY = true
+                }
+              }
+
+              update_properties_tab(selectedNode.id);
+              update_explorer();
+              UpdateOBJ_asrendered(ID)
+            });
+
+
+          } else if (proptype == "Vector2") {
+
+            let disabled = props_readonly.includes(name);
+
+            let visibleVector3 = Object.values(v).join(", ");
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+                <input class="propvalue" value="${escapeHTML(visibleVector3)}" placeholder="Enter a Vector 2.." ${disabled ? "readonly" : ""}>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+            let input = propnode.querySelector(".propvalue");
+
+            input.addEventListener("blur", () => {
+
+              let raw = input.value;
+
+              // detect vector3 format
+              if (raw.includes(",")) {
+
+                let parts = raw.split(",").map(v => parseFloat(v.trim()));
+
+                if (parts.length === 2 && parts.every(n => !isNaN(n))) {
+                  window.GAMEMODEL[ID].props[name] = {
+                    x: parts[0],
+                    y: parts[1]
+                  };
+                  window.IS_DIRTY = true
+                }
+
+              } else {
+
+                let newv = parseFloat(raw);
+
+                if (!isNaN(newv)) {
+                  window.GAMEMODEL[ID].props[name] = newv;
+                  window.IS_DIRTY = true
+                }
+              }
+
+              update_properties_tab(selectedNode.id);
+              update_explorer();
+              UpdateOBJ_asrendered(ID)
+            });
+
+
+          } else if (proptype == "Color3") {
+
+            let disabled = props_readonly.includes(name);
+
+            let visibleVector3 = Object.values(v).join(", ");
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+                <input class="propvalue" value="${escapeHTML(visibleVector3)}" placeholder="Enter a Vector 2.." ${disabled ? "readonly" : ""}>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+            let input = propnode.querySelector(".propvalue");
+
+            input.addEventListener("blur", () => {
+
+              let raw = input.value;
+
+              // detect vector3 format
+              if (raw.includes(",")) {
+
+                let parts = raw.split(",").map(v => parseFloat(v.trim()));
+
+                if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+                  window.GAMEMODEL[ID].props[name] = {
+                    r: parts[0],
+                    g: parts[1],
+                    b: parts[2],
+                  };
+                  window.IS_DIRTY = true
+                }
+
+              } else {
+
+                let newv = parseFloat(raw);
+
+                if (!isNaN(newv)) {
+                  window.GAMEMODEL[ID].props[name] = newv;
+                  window.IS_DIRTY = true
+                }
+              }
+
+              update_properties_tab(selectedNode.id);
+              update_explorer();
+              UpdateOBJ_asrendered(ID)
+            });
+
+          } else if (proptype == "Bool") {
+
+            let disabled = props_readonly.includes(name);
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+
+                <input 
+                  class="propvalue-bool" 
+                  type="checkbox" 
+                  ${v ? "checked" : ""} 
+                  ${disabled ? "disabled" : ""}
+                >
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+            let checkbox = propnode.querySelector(".propvalue-bool");
+
+            checkbox.addEventListener("change", () => {
+              window.GAMEMODEL[ID].props[name] = checkbox.checked
+              window.IS_DIRTY = true
+
+
+              update_properties_tab(selectedNode.id)
+              update_explorer()
+              UpdateOBJ_asrendered(ID)
+            });
+
+          } else if (proptype == "CFrame") {
+
+            let disabled = props_readonly.includes(name);
+
+            let cf = v
+
+            let posValue = escapeHTML(`${cf.position.x}, ${cf.position.y}, ${cf.position.z}`);
+            let rotValue = escapeHTML(`${cf.rotation.x}, ${cf.rotation.y}, ${cf.rotation.z}`);
+
+            let htmlitem = `
+              <div class="propitem ${disabled ? "readonly" : ""}">
+                <span class="propname">${escapeHTML(name)}</span>
+
+                <div class="cframe-editor">
+
+                  <div class="cframe-row">
+                    <span class="propname">Pos</span>
+                    <input class="cf-pos propvalue"
+                      value="${posValue}"
+                      ${disabled ? "readonly" : ""}>
+                  </div>
+
+                  <div class="cframe-row">
+                    <span class="propname">Rot</span>
+                    <input class="cf-rot propvalue"
+                      value="${rotValue}"
+                      ${disabled ? "readonly" : ""}>
+                  </div>
+
+                </div>
+              </div>
+            `;
+
+            let propnode = dostuffwithit(htmlitem);
+
+              let posInput = propnode.querySelector(".cf-pos");
+              let rotInput = propnode.querySelector(".cf-rot");
+
+              function parseVec3(str) {
+                let parts = str.split(",").map(v => parseFloat(v.trim()));
+                if (parts.length !== 3 || parts.some(n => isNaN(n))) return null;
+                return { x: parts[0], y: parts[1], z: parts[2] };
+              }
+
+              function applyCFrameUpdate() {
+                let pos = parseVec3(posInput.value);
+                let rot = parseVec3(rotInput.value);
+
+                if (!pos || !rot) return;
+
+                window.GAMEMODEL[ID].props[name] = {
+                  position: pos,
+                  rotation: rot
+                };
+
+                window.IS_DIRTY = true;
+
+                update_properties_tab(selectedNode.id);
+                update_explorer();
+                UpdateOBJ_asrendered(ID);
+              }
+
+              posInput.addEventListener("blur", applyCFrameUpdate);
+              rotInput.addEventListener("blur", applyCFrameUpdate);
+
+
+
+
+          } else  {
+            console.log(v)
+          }
+        
+      
+
+          //next
+        }
+
+        let htmlitem2 = `
+              <div class="propitem ${true ? "readonly" : ""}">
+                <span class="propname">${escapeHTML("Instance ID")}</span>
+                <input class="propvalue" value="${escapeHTML(ID)}" placeholder="" ${true ? "readonly" : ""}>
+              </div>
+            `;
+
+        let propnode = dostuffwithit(htmlitem2);
+
+      }
+    
+
+
+      window.update_properties_tab = update_properties_tab
+      async function Create_vexl(GAMEMODEL) {
+        const json = JSON.stringify(GAMEMODEL);
+        const encoder = new TextEncoder();
+        const data = encoder.encode(json);
+        const cs = new CompressionStream("gzip");
+        const writer = cs.writable.getWriter();
+        writer.write(data);
+        writer.close();
+        const compressed = await new Response(cs.readable).arrayBuffer();
+        return compressed; // ArrayBuffer
+      }
+      window.Create_vexl = Create_vexl
+
+      document.getElementById("savevex").onclick = async function () {
+        const vexl = await Create_vexl(window.GAMEMODEL);
+
+        // turn into a file
+        const blob = new Blob([vexl], { type: "application/gzip" });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "game.vexl"; // filename
+        a.click();
+
+        URL.revokeObjectURL(url);
+      };
+
+    document.getElementById("publishvex").onclick = async function () {
+      document.getElementById("publishPopup").classList.remove("hidden");
+
+      document.getElementById("pub1").classList.remove("hidden");
+    };
+
+    document.getElementById("cancelPublish").onclick = async function () {
+      document.getElementById("publishPopup").classList.add("hidden");
+    }
+    function setLoading(progress, text = "Loading...") {
+      document.querySelector(".loadingtext").innerText = text;
+      document.querySelector(".loadingfill").style.width = progress + "%";
+
+      if (progress >= 100) {
+        document.querySelector(".donebtn").classList.remove("hidden");
+      }
+
+
+    }
+
+    document.getElementById("donepublishbtn").onclick = async function () {
+      document.getElementById("publishPopup").classList.add("hidden");
+      document.getElementById("pub1").classList.add("hidden");
+      document.getElementById("pub2").classList.add("hidden");
+      document.getElementById("pub3").classList.add("hidden");
+      setLoading(0, "");
+    }
+
+
+  window.CURRENT_UPLOAD = null;
+    document.getElementById("cancelpublishrunning").oncancel = async function () {
+      window.CURRENT_UPLOAD.abort()
+      document.getElementById("publishPopup").classList.add("hidden");
+    }
+
+    let saving = false;
+
+    setInterval(async () => {
+      if (saving) return;
+      if (!window.IS_DIRTY) return;
+          const editingid = window.EDITING_ID;
+      saving = true;
+      COOLoutput(0, "Auto Saving...", "", "")
+
+      const vexlbuff = await Create_vexl(window.GAMEMODEL);
+
+      await fetch(`/api/studio/save/${editingid}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: vexlbuff
+      });
+      window.IS_DIRTY = false
+      COOLoutput(0, "Saved...", "", "")
+
+      saving = false;
+    }, 5000);
+
+
+  document.getElementById("confirmPublish").onclick = async function () {
+    document.getElementById("pub1").classList.add("hidden");
+    document.getElementById("pub2").classList.remove("hidden");
+
+    setLoading(1, "Creating .vexl ...");
+
+    const vexlbuff = await Create_vexl(window.GAMEMODEL);
+    const editingid = window.EDITING_ID;
+
+    setLoading(5, "Uploading...");
+
+    const xhr = new XMLHttpRequest();
+    window.CURRENT_UPLOAD = xhr;
+
+    xhr.open("POST", `/api/studio/publish/${editingid}`);
+
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("x-game-id", editingid);
+
+    // 🔥 upload progress
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.floor((e.loaded / e.total) * 100);
+        setLoading(percent, `Uploading... ${percent}%`);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        setLoading(100, "Done!");
+        document.querySelector(".donebtn").classList.remove("hidden");
+      } else {
+        setLoading(0, "Upload failed");
+      }
+    };
+
+    xhr.onerror = () => {
+      setLoading(0, "Network error");
+    };
+
+    xhr.send(vexlbuff);
+  };
+
+      document.getElementById("loadvex").onclick = async function () {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".vexl";
+
+        input.onchange = async () => {
+          const file = input.files[0];
+          if (!file) return;
+
+          const buffer = await file.arrayBuffer();
+
+
+          await LOADVEXL_FROM_ARRAY_BUFFER(buffer)
+
+        };
+
+        input.click();
+      };
+
+
+
+      function handle_parent_change(OBJECT, PARENT) {
+        const oldParent = window.GAMEMODEL[OBJECT].props["Parent"];
+
+        // Remove from old parent's children
+        if (oldParent && window.GAMEMODEL[oldParent]) {
+          const siblings = window.GAMEMODEL[oldParent].children;
+          const index = siblings.indexOf(OBJECT);
+          if (index !== -1) {
+            siblings.splice(index, 1);
+          }
+        }
+
+        // Set new parent
+        window.GAMEMODEL[OBJECT].props["Parent"] = PARENT;
+
+
+        // Add to new parent's children
+        if (PARENT && window.GAMEMODEL[PARENT]) {
+          window.GAMEMODEL[PARENT].children.push(OBJECT);
+        }
+
+        if (oldParent) {
+          UpdateOBJ_asrendered(oldParent)
+        }
+
+
+        UpdateOBJ_asrendered(PARENT)
+
+        window.IS_DIRTY = true
+
+        update_explorer()
+        update_properties_tab(selectedNode.id)
+      }
+      window.handle_parent_change = handle_parent_change
+
+      function handle_delete_obj(OBJECT, not_main) {
+        const thatdata = window.GAMEMODEL[OBJECT]
+        if (thatdata.props.Parent == GAME_MODEL_ID) {
+          return
+        }
+
+        const children = thatdata["children"]
+        for (const i of children) {
+          handle_delete_obj(i, true)
+        }
+
+        let rendered = ID_TO_MESH[OBJECT]
+        if (rendered) {
+          window.scene.remove(rendered);
+          delete ID_TO_MESH[OBJECT];
+        }
+
+
+
+
+        const oldParent = thatdata.props["Parent"]
+        // Remove from old parent's children
+        if (oldParent && window.GAMEMODEL[oldParent]) {
+          const siblings = window.GAMEMODEL[oldParent].children;
+          const index = siblings.indexOf(OBJECT);
+          if (index !== -1) {
+            siblings.splice(index, 1);
+          }
+        }
+        UpdateOBJ_asrendered(oldParent)
+
+
+        delete window.GAMEMODEL[OBJECT]
+
+        if (!not_main) {
+          update_explorer()
+          update_properties_tab(selectedNode.id)
+
+        }
+
+        window.IS_DIRTY = true
+      }
+      window.handle_delete_obj = handle_delete_obj
+
+
+      window.materialCache = {};
+
+      function make_vector3(x = 0, y = 0, z = 0) {
+        return { x, y, z };
+      }
+
+      function make_vector2(x = 0, y = 0) {
+        return { x, y };
+      }
+
+      function make_color3(r = 255, g = 255, b = 255) {
+        return { r, g, b };
+      }
+
+      function make_cframe(
+        px = 0, py = 0, pz = 0,
+        rx = 0, ry = 0, rz = 0
+      ) {
+        return {
+          position: { x: px, y: py, z: pz },
+          rotation: { x: rx, y: ry, z: rz }
+        };
+      }
+
+      window.make_vector3 = make_vector3
+      window.make_vector2 = make_vector2
+      window.make_color3 = make_color3
+      window.make_cframe = make_cframe
+
+      function escapeHTML(str) {
+        return str.toString()
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+
+      window.CLASS_Services = [
+        "Workspace",
+        "Players",
+        "ReplicatedStorage",
+        "Lighting",
+        "ServerScripts",
+        "ClientScripts",
+      ]
+
+
+      async function loadProps() {
+        window.all_props_for_classes = (await (await fetch("/all_props_for_classes.json")).json());
+        window.prop_types = (await (await fetch("/prop_types.json")).json());
+        window.prop_default = (await (await fetch("/prop_default.json")).json());
+      }
+
+
+
+      window.props_readonly = [
+        "ClassName",
+      ]
+
+      const Source_DEFAULT = `{"blocks":{"languageVersion":0,"blocks":[{"type":"event_start","id":"Ap[Aw04#fc@Tb2_=do_l","x":210,"y":96,"next":{"block":{"type":"print","id":"uGH}V%cw4ac|.8NM7l)R","inputs":{"TEXT":{"block":{"type":"type_string","id":"s:(Gd9B|y?mI~ClMJh)1","fields":{"TEXT":"Hello World"}}}}}}}]}}`
+      window.selectedNode = null
+
+      function createInstance(props) {
+        const instanceID = crypto.randomUUID()
+        const parentID = props["Parent"]
+
+        if (parentID) {
+          window.GAMEMODEL[parentID]["children"].push(instanceID)
+        }
+
+        for (const i of all_props_for_classes[props.ClassName]) {
+          const defaultPROP = window.prop_default[i]
+
+
+          if (props[i] == undefined) {
+            const pt = prop_types[i]
+            if (pt == "String") {
+              if ((i) == "Source") {
+                props[i] = Source_DEFAULT
+              } else {
+                props[i] = ""
+              }
+            } else if (pt == "Number") {
+              props[i] = defaultPROP || 0
+            } else if (pt == "Object") {
+              props[i] = defaultPROP || null
+            } else if (pt == "Vector3") {
+              props[i] = defaultPROP || make_vector3()
+            } else if (pt == "Color3") {
+              props[i] = defaultPROP || make_color3()
+            } else if (pt == "Vector2") {
+              props[i] = defaultPROP || make_vector2()
+            } else if (pt == "Bool") {
+              props[i] = defaultPROP || true
+            } else if (pt == "CFrame") {
+              props[i] = defaultPROP || make_cframe()
+            }
+          }
+        }
+
+        window.GAMEMODEL[instanceID] = {
+          children: [],
+          props: props,
+        }
+        window.IS_DIRTY = true
+        return instanceID
+      }
+
+      window.createInstance = createInstance
+
+
+
+function destroyThreeCanvas() {
+  // stop render loop first (IMPORTANT)
+  if (window.isRunning !== undefined) {
+    window.isRunning = false;
+  }
+
+  // dispose scene
+  if (window.scene) {
+    window.scene.traverse((obj) => {
+      if (obj.geometry) obj.geometry.dispose();
+
+      if (obj.material) {
+        const materials = Array.isArray(obj.material)
+          ? obj.material
+          : [obj.material];
+
+        for (const mat of materials) {
+          for (const key in mat) {
+            const v = mat[key];
+            if (v && v.isTexture) v.dispose();
+          }
+          mat.dispose();
+        }
+      }
+    });
+
+    window.scene.clear();
+    window.scene = null;
+  }
+
+  // dispose renderer
+  if (window.renderer) {
+    window.renderer.dispose();
+
+    // remove canvas from DOM
+    if (window.renderer.domElement?.parentNode) {
+      window.renderer.domElement.parentNode.removeChild(
+        window.renderer.domElement
+      );
+    }
+
+    window.renderer = null;
+  }
+
+  // remove stats UI if exists
+  if (window.stats?.dom?.parentNode) {
+    window.stats.dom.parentNode.removeChild(window.stats.dom);
+    window.stats = null;
+  }
+
+  // clear caches
+  window.ID_TO_MESH = {};
+  window.DECAL_FOR_PART_ID = {};
+  window.materialCache = {};
+
+  // clear container leftovers (optional safety)
+  const container = document.getElementById("DISPLAY3dREAL");
+  if (container) {
+    container.innerHTML = "";
+  }
+
+  console.log("Three.js fully destroyed (scene + canvas + renderer)");
+}
+
+
+
+      function createNode(id) {
+        const objectData = window.GAMEMODEL[id];
+        const props = objectData.props;
+
+        const node = document.createElement("div");
+        node.className = "node";
+        node.dataset.id = id;
+
+        node.innerHTML = `
+        <div class="mainnode"> 
+      <img class="iconimage whiteimg openclose nochildren" src="/closed.svg">
+      <div class="nodeselect">
+
+
+      <img class="iconimage whiteimg" src="/exicons/${escapeHTML(props.ClassName)}.svg">
+
+      <span>${escapeHTML(props.Name)}</span>
+
+      </div>
+
+      </div>
+
+      <div class="outchilds">
+        <div class="spacer"></div>
+        <div class="children"></div>
+
+      </div>
+    `;
+
+        const isOpen = openState[id] ?? false;
+
+        if (isOpen) {
+          node.querySelector(".children").classList.add("openchildren");
+          node.querySelector(".openclose").src = "/open.svg";
+        } else {
+          node.querySelector(".children").classList.remove("openchildren");
+          node.querySelector(".openclose").src = "/closed.svg";
+        }
+
+        if (selectedNode) {
+          if (selectedNode["id"] == id) {
+            const mainnode = node.querySelector(".mainnode")
+            selectedNode = {
+              dom: mainnode,
+              id: id
+            };
+            mainnode.classList.add("selected")
+          }
+        }
+
+
+        return node;
+      }
+
+
+
+      function update_explorer() {
+        const extree = document.getElementById("explorerTree");
+        extree.innerHTML = "";
+        const nodes = {};
+
+        for (const id of Object.keys(window.GAMEMODEL)) {
+          nodes[id] = createNode(id);
+        }
+        for (const id of Object.keys(window.GAMEMODEL)) {
+          const props = window.GAMEMODEL[id].props;
+          const parentId = props.Parent;
+
+          const node = nodes[id];
+
+    
+          if (parentId && (parentId != GAME_MODEL_ID)) {
+
+            if (GAMEMODEL[parentId]) {
+                            nodes[parentId]
+                .querySelector(".children")
+                .appendChild(node);
+
+              nodes[parentId].querySelector(".openclose").classList.remove("nochildren");
+            }
+
+            } else {
+              if (parentId) {
+                extree.appendChild(node);
+              }
+
+            }
+          
+
+
+
+
+          const mainnode = node.querySelector(".mainnode")
+          const openclose = node.querySelector(".openclose")
+          const nodeselect = node.querySelector(".nodeselect")
+
+          openclose.onclick = function () {
+            openState[node.dataset.id] = !openState[node.dataset.id];
+
+            const isOpen = openState[node.dataset.id];
+
+            if (isOpen) {
+              node.querySelector(".children").classList.add("openchildren");
+              openclose.src = "/open.svg";
+            } else {
+              node.querySelector(".children").classList.remove("openchildren");
+              openclose.src = "/closed.svg";
+            }
+          };
+
+
+          nodeselect.ondblclick = function () {
+            if (props["Source"] == undefined) {
+              return
+            }
+
+            console.log("double clicked");
+
+
+
+            let exists = opentabs[id]
+
+
+            if (exists == undefined) {
+
+            const newIFRAME = document.createElement("iframe");
+            newIFRAME.src = `/scripting?forid=${id}`;
+
+            newIFRAME.style.width = "100%";
+            newIFRAME.style.height = "100%";
+            newIFRAME.style.border = "none";
+            newIFRAME.style.display = "block";
+
+            SCRIPTINGiframes.set(id, newIFRAME)
+
+            const currentsource = window.GAMEMODEL[id].props["Source"]
+
+
+            document.getElementById("DISPLAY3dREAL").appendChild(newIFRAME);
+
+              // IMPORTANT: pass the CLONE, not the original
+              const scripttab = createTAB(
+                props.Name,
+                `/exicons/${props.ClassName}.svg`,
+                newIFRAME,   // 🔥 FIXED HERE
+                false,
+                id
+              );
+
+              newIFRAME.onload = () => {
+
+                const parsed = JSON.parse(currentsource)
+
+                console.log(parsed)
+
+                newIFRAME.contentWindow.postMessage(
+                  {
+                    type: "LOAD_BLOCKS",
+                    id: id,
+                    data: parsed
+                  },
+                  "*"
+                );
+              };
+            }
+
+
+             openTAB(id);
+
+            
+          };
+
+          nodeselect.onclick = function () {
+            if (window.obj_prop_changing) {
+
+              let propname = window.obj_prop_changing.name
+
+
+
+
+              if (propname == "Parent") {
+                handle_parent_change(window.obj_prop_changing.ID, id)
+                //open the new parent
+                openState[id] = true
+
+              } else {
+                window.GAMEMODEL[window.obj_prop_changing.ID].props[propname] = id
+              }
+
+
+
+              update_properties_tab(selectedNode.id)
+              update_explorer()
+
+              UpdateOBJ_asrendered(selectedNode.id)
+
+              document.body.classList.remove("pickmode");
+              window.obj_prop_changing = false
+              return
+            }
+
+
+            if (selectedNode) {
+              selectedNode.dom.classList.remove("selected")
+              update_properties_tab(selectedNode)
+            }
+
+
+            selectedNode = {
+              dom: mainnode,
+              id: node.dataset.id
+            };
+
+            mainnode.classList.add("selected")
+
+            update_properties_tab(selectedNode.id)
+
+
+          };
+
+
+        }
+      }
+
+      window.update_explorer = update_explorer
+
+      let openState = {}; // id -> true/false
+
+
+
+
+      //blockly msgs
+
+      window.addEventListener("message", (event) => {
+        if (!event.data || event.data.type === "BLOCKLY_TEST") {
+
+          const blockID = event.data.blockid
+          if (!blockID) {
+            return
+          }
+          const scriptid = event.data.scriptid
+          if (!scriptid) {
+              return
+            }
+
+          const sourceSTR = event.data.data
+
+          const iframe = SCRIPTINGiframes.get(scriptid)
+          if (!iframe) {
+            return
+          }
+
+
+
+
+          const CLONEDGAME = structuredClone(window.GAMEMODEL)
+          const ScriptName = CLONEDGAME[scriptid]["props"]["Name"]
+
+          window.testrun(CLONEDGAME, sourceSTR, "studio", ScriptName, scriptid, blockID, iframe)
+
+          return
+        }
+
+
+
+
+        if (!event.data || event.data.type !== "BLOCKLY_UPDATE") return;
+
+        const blocksJSON = event.data.data
+        const scriptID = event.data.forid
+
+        const sourceSTR = JSON.stringify(blocksJSON)
+
+        if (window.GAMEMODEL[scriptID]) {
+          window.GAMEMODEL[scriptID].props["Source"] = sourceSTR
+          window.IS_DIRTY = true
+
+        } else {
+          if (!window.GAMEMODEL[scriptID]) {
+            let tabID = scriptID
+            const [tab, dom] = opentabs[tabID];
+
+            tab.remove();
+            dom.remove();
+            delete opentabs[tabID];
+
+            // remove from history
+            tabHistory = tabHistory.filter(id => id !== tabID);
+
+            // open last tab
+            const last = tabHistory[0];
+            if (last && opentabs[last]) {
+              openTAB(last);
+            }
+          }
+        }
+
+
+
+
+
+
+
+      });
+
+      async function init() {
+        await loadProps();
+
+        load_world()
+      }
+
+      init();
+
+      
+
+
+    </script>
+  </div>
+
+</body>
+
+
+</html>

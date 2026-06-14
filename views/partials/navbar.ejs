@@ -1,0 +1,60 @@
+<nav class="navbar">
+
+  <div class="topbar">
+    <a class="nav-item" href="/">Home</a>
+    <a class="nav-item" href="/games">Games</a>
+    <a class="nav-item" href="/build">Build</a>
+    <% if (isadmin) { %>
+    <a class="nav-item" href="/imageapprove">Image Approve</a>
+    <% } %>
+  </div>
+
+    <form method="GET" action="/search" class="search-form" style="display: none;">
+      <input 
+        type="text" 
+        name="q" 
+        placeholder="Search" 
+        required
+      />
+    </form>
+
+
+  <span class="errormsg">
+    <%= error %>
+  </span>
+
+
+  <div class="nav-right">
+  <div class="stat">
+    <img src="/coin.svg" class="iconimage whiteimg">
+    <span>0</span>
+  </div>
+
+
+    <span>
+      <% if (user) { %>
+        Logged in as <%= user.username %>
+      <% } else { %>
+        Not logged in
+      <% } %>
+    </span>
+
+    <% if (user) { %>
+
+      <!-- LOGGED IN: show settings only -->
+
+       <a class="nav-item" href="/settings">Settings</a>
+
+
+  <% } else { %>
+
+    <div class="auth-buttons">
+      <a class="btn btn-secondary" href="/signin">Sign In</a>
+      <a class="btn btn-primary" href="/signup">Sign Up</a>
+    </div>
+
+  <% } %>
+
+  </div>
+
+</nav>

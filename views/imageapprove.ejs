@@ -1,0 +1,78 @@
+<html lang="en">
+<head>
+      <%- include("partials/head") %>
+    <title>Admin - Image Approvals</title>
+
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+    <div class="top">
+        <h1>Image approvals</h1>
+    </div>
+    <div class="approves" id="apppp">
+
+    </div>
+    <script>
+        async function find_pending_assets() {
+            const res = await fetch("/api/admin/pendingassets")
+            const all = await res.json()
+            let allhtml = ""
+            for (const i of all) {
+
+                let html = `<div class="aproveitem" data-hash="${i.hash}">
+                <img src="/pendingthumbs/${i.hash}" class="aimg">
+                <div class="aproveoptions">
+                    <button onclick="approve('${i.hash}')" class="approve">
+                        Approve Asset
+                    </button>
+                    <button onclick="reject('${i.hash}')" class="reject">
+                        Reject Asset
+                    </button>
+                </div>
+                </div>`;
+                allhtml += html
+
+
+            }
+
+            document.getElementById("apppp").innerHTML = allhtml
+            
+        }
+
+       
+
+        async function approve(hash) {
+            document.querySelector(`[data-hash="${hash}"]`).remove();
+            await fetch(`/api/admin/assets/${hash}/approve`, {
+                method: "POST"
+            });
+            
+        }
+
+        async function reject(hash) {
+            document.querySelector(`[data-hash="${hash}"]`).remove();
+            await fetch(`/api/admin/assets/${hash}/reject`, {
+                method: "POST",
+            });
+
+        }
+
+        find_pending_assets()
+    </script>
+
+  </div>
+
+</div> 
+
+
+
+    
+</body>
+</html>

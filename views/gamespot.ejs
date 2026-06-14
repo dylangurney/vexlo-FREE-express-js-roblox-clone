@@ -1,0 +1,175 @@
+    <style>
+      .page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+/* game card */
+.game-card {
+  text-decoration: none;
+  color: inherit;
+  background: #1e1e1e;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-3px);
+  background: #252525;
+}
+
+/* thumbnail */
+.thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #111;
+  overflow: hidden;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* info */
+.game-info {
+  padding: 8px 10px;
+}
+
+.game-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.game-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.game-players {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.game-likes {
+  font-size: 12px;
+  color: #aaa;
+}
+.rating-bar {
+  width: 100%;
+  height: 5px;
+  background: #333;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.rating-fill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 999px;
+}
+
+.game-rating-text {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+    </style>
+
+      <h2 class="page-title">Discover</h2>
+
+  <div class="games-grid">
+
+
+
+  </div>
+  <script>
+      function escapeHTML(str) { return str.toString() .replaceAll("&", "&amp;") .replaceAll("<", "&lt;") .replaceAll(">", "&gt;") .replaceAll('"', "&quot;") .replaceAll("'", "&#039;"); }
+
+    async function refresh_games_list() {
+      const res = await fetch("/api/games/discover");
+      const games = await res.json();
+
+      const grid = document.querySelector(".games-grid");
+      grid.innerHTML = "";
+
+      for (const game of games) {
+        const likes = game.likes || 0;
+        const dislikes = game.dislikes || 0;
+        const total = likes + dislikes;
+
+        const likePercent = total > 0
+          ? Math.round((likes / total) * 100)
+          : 50;
+
+        console.log(likePercent)
+
+        let gamecard =  `<a class="game-card" href="/game/${game.id}">
+        <div class="thumb">
+          <img src="${ escapeHTML('/gamethumbnails/' + game.thumbnail) }" />
+        </div>
+        <div class="game-info">
+          <div class="game-name">${escapeHTML(game.name)}</div>
+
+          <div class="game-meta">
+            <div class="game-players">${escapeHTML(game.playerCount)} playing</div>
+          </div>
+
+          <div class="rating-bar">
+            <div class="rating-fill" style="width: ${likePercent}%;"></div>
+          </div>
+
+          <div class="game-rating-text">
+            <span class="like">
+              <svg viewBox="0 0 24 24" class="icon like-icon whiteimg">
+                <path d="M2 21h4V9H2v12zm20-11c0-1.1-.9-2-2-2h-6.3l.9-4.3v-.3c0-.4-.2-.8-.4-1.1L13 2 7.6 7.4C7.2 7.8 7 8.4 7 9v10c0 1.1.9 2 2 2h7c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-1z"/>
+              </svg>
+              ${likes}
+            </span>
+
+            <span class="dislike">
+              <svg viewBox="0 0 24 24" class="icon dislike-icon whiteimg">
+                <path d="M22 3h-4v12h4V3zM2 14c0 1.1.9 2 2 2h6.3l-.9 4.3v.3c0 .4.2.8.4 1.1L11 22l5.4-5.4c.4-.4.6-1 .6-1.6V5c0-1.1-.9-2-2-2H8c-.8 0-1.5.5-1.8 1.2l-3 7c-.1.2-.2.5-.2.8v1z"/>
+              </svg>
+              ${dislikes}
+            </span>
+            
+          </div>
+        </div>
+      </a>`
+
+      grid.innerHTML += gamecard
+
+      }
+
+
+
+    }
+
+    refresh_games_list()
+  </script>

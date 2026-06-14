@@ -1,0 +1,97 @@
+<html lang="en">
+<head>
+    <%- include("partials/head") %>
+    <title>Vexlo</title>
+    <%- include("partials/embeds") %>
+</head>
+<body>
+<div class="layout">
+
+  <%- include("partials/navbar") %>
+
+  <div class="main">
+    <%- include("partials/sidenav") %>
+
+  <div class="content">
+        <div class="auth-card">
+      <h1>Change Password</h1>
+      <style>
+        .pw-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pw-field input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.pw-field button {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.pw-field button:hover {
+    background: none !important
+}
+      </style>
+
+      <form method="POST" action="/api/changepassword" class="auth-form">
+        <div class="pw-field">
+        <input type="password" name="currentpassword" placeholder="Current Password" required />
+        <button type="button" onclick="togglePw(this)">👁</button>
+        </div>
+
+        <div class="pw-field">
+        <input type="password" name="newpassword" placeholder="New Password" required />
+        <button type="button" onclick="togglePw(this)">👁</button>
+        </div>
+
+        <div class="pw-field">
+        <input type="password" name="newpasswordconfirm" placeholder="Confirm New Password" required />
+        <button type="button" onclick="togglePw(this)">👁</button>
+
+
+        </div>
+        <span style="font-size: x-small;">
+            Please use a secure password and write it down. if you lose your password you lose your account
+        </span>
+        <button type="submit">Change Password</button>
+      </form>
+      <script>
+        function togglePw(btn) {
+  const input = btn.parentElement.querySelector("input");
+
+  if (input.type === "password") {
+    input.type = "text";
+    btn.textContent = "🙈";
+  } else {
+    input.type = "password";
+    btn.textContent = "👁";
+  }
+}
+      </script>
+    </div>
+
+    <br>
+
+      <form method="POST" action="/api/logout">
+        <button type="submit">
+          Log Out
+        </button>
+      </form>
+  </div>
+
+  </div>
+
+</div>
+
+  
+</body>
+</html>
