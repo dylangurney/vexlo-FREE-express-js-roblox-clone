@@ -1,0 +1,22 @@
+{
+  "game": ["ClassName", "Name"],
+  "Workspace": ["Parent", "ClassName", "Name"],
+  "Players": ["Parent", "ClassName", "Name"],
+  "ReplicatedStorage": ["Parent", "ClassName", "Name"],
+  "Lighting": ["Parent", "ClassName", "Name"],
+  "ServerScripts": ["Parent", "ClassName", "Name"],
+  "ClientScripts": ["Parent", "ClassName", "Name"],
+  "Part": ["Parent", "ClassName", "Name", "CFrame", "Size", "Color", "Velocity", "Anchored", "NetworkOwner"],
+  "Model": ["Parent", "ClassName", "Name"],
+  "Humanoid": ["Parent", "ClassName", "Name", "Health", "MaxHealth", "WalkSpeed", "JumpPower"],
+  "SpawnLocation": ["Parent", "ClassName", "Name", "CFrame", "Size", "Color", "Enabled", "Velocity", "Anchored"],
+  "Image": ["Parent", "ClassName", "Name", "ImageURL", "ImageSize", "Face", "Enabled"],
+  "Texture": ["Parent", "ClassName", "Name", "ColorURL", "DisplacementURL", "NormalURL", "RoughnessURL", "Enabled"],
+  "Camera": ["Parent", "ClassName", "Name", "CFrame", "FieldOfView", "LookAt", "LookFrom", "UseLookAt"],
+  "ServerScript": ["Parent", "ClassName", "Name", "Source", "Enabled"],
+  "ClientScript": ["Parent", "ClassName", "Name", "Source", "Enabled"],
+  "Player": ["Parent", "ClassName", "Name", "UserId", "Character"],
+  "Mesh": ["Parent", "ClassName", "Name", "CFrame", "Scale", "Color", "Velocity", "Anchored", "SourceURL", "NetworkOwner"],
+  "Character": ["Parent", "ClassName", "Name", "CFrame", "Scale", "Velocity", "Anchored", "HeadColor", "TorsoColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor", "NetworkOwner"],
+  "Folder": ["Parent", "ClassName", "Name"]
+}
