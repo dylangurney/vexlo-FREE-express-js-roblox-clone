@@ -1,5 +1,7 @@
 this is vexlo the free open source roblox CLONE
 
+is is all browser based
+
 <img width="623" height="775" alt="image" src="https://github.com/user-attachments/assets/26edb832-6e08-461b-8e69-1db1731ffcfb" />
 
 <img width="421" height="353" alt="image" src="https://github.com/user-attachments/assets/71888830-221e-4e10-a311-1959cb7557ba" />
